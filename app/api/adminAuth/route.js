@@ -1,24 +1,20 @@
 import { NextResponse } from 'next/server';
+import { Redis } from '@upstash/redis';
 
-let redis = null;
-const initRedis = async () => {
-  if (!redis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    const { Redis } = await import('@upstash/redis');
-    redis = new Redis({
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN,
-    });
-  }
-  return redis;
-};
+function getRedis() {
+  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
+  if (!url || !token) return null;
+  return new Redis({ url, token });
+}
 
 let localStore = { adminUsername: 'admin', adminPassword: 'admin' };
 
 async function readStore() {
-  const r = await initRedis();
-  if (r) {
+  const redis = getRedis();
+  if (redis) {
     try {
-      const data = await r.get('exam_settings');
+      const data = await redis.get('exam_settings');
       if (data) return typeof data === 'string' ? JSON.parse(data) : data;
     } catch (e) {}
   }
@@ -27,9 +23,9 @@ async function readStore() {
 
 async function writeStore(updates) {
   localStore = { ...localStore, ...updates };
-  const r = await initRedis();
-  if (r) {
-    try { await r.set('exam_settings', JSON.stringify(localStore)); } catch (e) {}
+  const redis = getRedis();
+  if (redis) {
+    try { await redis.set('exam_settings', JSON.stringify(localStore)); } catch (e) {}
   }
 }
 
