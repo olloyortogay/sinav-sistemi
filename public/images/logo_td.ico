@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <!-- Favicon: WebP first, PNG fallback -->
+  <link rel="icon" type="image/webp" href="/favicon.webp" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Fonts: preconnect + non-blocking load (render-blocking fix) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&family=Merriweather:wght@300;400;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&family=Merriweather:wght@300;400;700&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600;700;900&family=Merriweather:wght@300;400;700&display=swap" /></noscript>
+
+  <!-- Dark mode: apply before paint to avoid FOUC -->
+  <script>
+    (function() {
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        }
+      } catch(e) {}
+    })();
+  </script>
+
+  <!-- SEO Meta Tags -->
+  <title>Turk Dunyosiga xush kelibsiz! | Turk tili kurslari - Online Türkçe Öğrenme</title>
+  <meta name="description"
+    content="Özbekistan'da en iyi online Türkçe kursu. Uzaktan eğitim ile profesyonel öğretmenlerden Türkçe öğrenin. Tys'ga tayyorlanish, turk tili onlayn kurslar, sefrga tayyorlanish." />
+  <meta name="keywords"
+    content="turk tili kurslari, turk tili onlayn kurslar, tysga tayyorlanish, sefrga tayyorlanish, turk tilidan onlayn darslar, turk tilini noldan o'rganish, turkça öğrenme, online türkçe dersleri" />
+  <meta name="author" content="Turk Dunyosi" />
+  <meta name="robots" content="index, follow" />
+  <link rel="canonical" href="https://turkdunyasi.uz/" />
+
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://turkdunyasi.uz/" />
+  <meta property="og:title" content="Turk Dunyosi - Turk tili kurslari" />
+  <meta property="og:description"
+    content="Eng yaxshi turk tili onlayn kurslar. Tysga va sefrga tayyorlanish." />
+  <meta property="og:image" content="https://turkdunyasi.uz/logo.webp" />
+  <meta property="og:locale" content="uz_UZ" />
+  <meta property="og:locale:alternate" content="tr_TR" />
+
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://turkdunyasi.uz/" />
+  <meta property="twitter:title" content="Turk Dunyosi - Turk tili kurslari" />
+  <meta property="twitter:description"
+    content="Eng yaxshi turk tili onlayn kurslar. Tysga va sefrga tayyorlanish." />
+  <meta property="twitter:image" content="https://turkdunyasi.uz/logo.webp" />
+
+  <!-- Geo Tags -->
+  <meta name="geo.region" content="UZ" />
+  <meta name="geo.placename" content="Tashkent" />
+
+  <!-- Schema.org Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "EducationalOrganization",
+    "name": "Turk Dunyosi",
+    "description": "Online Türkçe Dil Kursu - Özbekistan",
+    "url": "https://turkdunyasi.uz",
+    "logo": "https://turkdunyasi.uz/logo.png",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Tashkent",
+      "addressRegion": "Shayxontohur",
+      "addressCountry": "UZ"
+    },
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "telephone": "+998-90-341-80-90",
+      "contactType": "Customer Service",
+      "email": "otogay1@gmail.com",
+      "availableLanguage": ["Turkish", "Uzbek"]
+    },
+    "sameAs": [
+      "https://www.instagram.com/turkdunyasi2026/",
+      "https://t.me/turkdunyasi_on"
+    ],
+    "offers": {
+      "@type": "AggregateOffer",
+      "priceCurrency": "UZS",
+      "lowPrice": "250000",
+      "highPrice": "700000",
+      "offerCount": "3"
+    }
+  }
+  </script>
+  <script type="module" crossorigin src="/assets/index-C1gjEEXc.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/vendor-react-N--QU9DW.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-motion-nhGHT7cn.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-i18n-CXaZCPIH.js">
+  <link rel="modulepreload" crossorigin href="/assets/vendor-router-BnWelkvW.js">
+  <link rel="stylesheet" crossorigin href="/assets/index-DEXVHdB4.css">
+</head>
+
+<body>
+  <div id="root"></div>
+</body>
+
+</html>

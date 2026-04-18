@@ -254,7 +254,10 @@ export default function ExamInterface() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
         <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-blue-100">
           <div className="text-center mb-8">
-            <div className="text-5xl mb-3">🏛️</div>
+            <div className="flex justify-center mb-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/images/logo.webp" alt="Türk Dünyası" className="w-24 h-24 object-contain" />
+            </div>
             <h1 className="text-3xl font-extrabold text-gray-800 mb-1">Türk Dünyası</h1>
             <p className="text-blue-600 font-semibold">Konuşma Sınavı</p>
             <p className="text-sm text-gray-400 mt-1">by Marjona hoca</p>
