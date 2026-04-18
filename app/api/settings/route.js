@@ -1,23 +1,43 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
 
+// Upstash Redis - sadece env var'lar varsa aktif olur, yoksa local memory kullanılır
+let redis = null;
+const initRedis = async () => {
+  if (!redis && process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    const { Redis } = await import('@upstash/redis');
+    redis = new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN,
+    });
+  }
+  return redis;
+};
+
+// Local memory fallback (Redis yoksa)
 let localStore = { activeVariant: 'random', adminUsername: 'admin', adminPassword: 'admin' };
 
-// ---- HELPERS ----
 async function readStore() {
-  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
+  const r = await initRedis();
+  if (r) {
     try {
-      const data = await kv.get('exam_settings');
-      if (data) return data;
-    } catch (_) {}
+      const data = await r.get('exam_settings');
+      if (data) return typeof data === 'string' ? JSON.parse(data) : data;
+    } catch (e) {
+      console.warn('Redis read error, using local store:', e.message);
+    }
   }
   return localStore;
 }
 
-async function writeStore(data) {
-  localStore = { ...localStore, ...data };
-  if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-    try { await kv.set('exam_settings', localStore); } catch (_) {}
+async function writeStore(updates) {
+  localStore = { ...localStore, ...updates };
+  const r = await initRedis();
+  if (r) {
+    try {
+      await r.set('exam_settings', JSON.stringify(localStore));
+    } catch (e) {
+      console.warn('Redis write error:', e.message);
+    }
   }
 }
 
@@ -28,8 +48,7 @@ export async function GET() {
 
 export async function POST(request) {
   try {
-    const body = await request.json();
-    const { variant } = body;
+    const { variant } = await request.json();
     await writeStore({ activeVariant: String(variant) });
     return NextResponse.json({ success: true, activeVariant: variant });
   } catch (err) {
