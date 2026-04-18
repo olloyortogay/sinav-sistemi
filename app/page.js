@@ -1,12 +1,20 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateExam } from './data/questions';
+import { useUser, SignIn, UserButton } from '@clerk/nextjs';
+
+// Kullanıcı bu kadar soruyu kayıt olmadan çözebilir:
+const FREE_QUESTIONS_LIMIT = 3;
 
 export default function ExamInterface() {
   // ── App State Machine ──────────────────────────────────────────────────────
   // States: LOGIN | MIC_CHECK | GATEWAY | EXAM | UPLOADING | FINISHED
   const [appState, setAppState]       = useState('LOGIN');
   const [studentName, setStudentName] = useState('');
+
+  // ── Clerk Auth ────────────────────────────────────────────────────────────
+  const { isSignedIn, user, isLoaded } = useUser();
+  const [showAuthWall, setShowAuthWall] = useState(false);
 
   // ── Exam State ─────────────────────────────────────────────────────────────
   const [questions, setQuestions]                 = useState([]);
@@ -194,6 +202,15 @@ export default function ExamInterface() {
   // ── Navigation ─────────────────────────────────────────────────────────────
   const goToNextItem = () => {
     const nextIndex = currentQuestionIndex + 1;
+
+    // 🔒 HAVUÇ STRATEJİSİ: Ücretsiz limit aşıldıysa ve kullanıcı giriş yapmadıysa duvar göster
+    const answeredQuestions = allRecordingsRef.current.length;
+    if (!isSignedIn && answeredQuestions >= FREE_QUESTIONS_LIMIT) {
+      setShowAuthWall(true);
+      if (totalTimerRef.current) clearInterval(totalTimerRef.current);
+      return;
+    }
+
     if (nextIndex < questions.length) {
       const next = questions[nextIndex];
       setCurrentQuestionIndex(nextIndex);
@@ -386,6 +403,48 @@ export default function ExamInterface() {
     );
   }
 
+  // ── AUTH WALL (Havuç Stratejisi) ──────────────────────────────────────────
+  if (showAuthWall) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center p-6">
+        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
+          {/* Üst başlık */}
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center">
+            <div className="text-5xl mb-3">🔐</div>
+            <h2 className="text-2xl font-extrabold text-white">Harika Gidiyorsunuz!</h2>
+            <p className="text-blue-200 mt-2">İlk {FREE_QUESTIONS_LIMIT} soruyu başarıyla tamamladınız</p>
+          </div>
+          {/* Kart içeriği */}
+          <div className="p-8">
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 text-center">
+              <p className="text-yellow-800 font-semibold text-sm">
+                ✨ Sınavın tamamını tamamlamak ve<br/>
+                <strong>kişisel sonuç raporunuzu</strong> almak için giriş yapın
+              </p>
+            </div>
+            {/* Clerk SignIn bileşeni — Google, Telegram vs. otomatik görünür */}
+            <SignIn
+              routing="hash"
+              afterSignInUrl={`${typeof window !== 'undefined' ? window.location.href : ''}#resume`}
+              appearance={{
+                elements: {
+                  card: 'shadow-none border-0',
+                  headerTitle: 'hidden',
+                  headerSubtitle: 'hidden',
+                  socialButtonsBlockButton: 'border border-gray-200 hover:border-blue-400 transition',
+                  formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
+                },
+              }}
+            />
+            <p className="text-center text-xs text-gray-400 mt-4">
+              Giriş yaptıktan sonra sınavınıza kaldığınız yerden devam edeceksiniz
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // ── EXAM (ANA SINAV EKRANI) ───────────────────────────────────────────────
   if (!currentItem) return null;
 
@@ -408,6 +467,8 @@ export default function ExamInterface() {
             </span>
           </div>
           <p className="font-semibold text-gray-700">{studentName}</p>
+          {/* Clerk kullanıcı butonu — giriş yapıldıysa avatar göster */}
+          {isSignedIn && <UserButton afterSignOutUrl="/" />}
         </div>
       </header>
 
