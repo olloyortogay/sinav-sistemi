@@ -1,0 +1,21 @@
+[
+  {
+    "id": 1,
+    "level": "B1",
+    "section": "1. Bölüm",
+    "type": "text",
+    "question": "Hangi filmi seviyorsunuz ve neden?",
+    "prepTime": 5,
+    "speakTime": 30
+  },
+  {
+    "id": 2,
+    "level": "B2",
+    "section": "1.2. Bölüm",
+    "type": "image",
+    "image_url": "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=800",
+    "question": "Fotoğraflarda neler görüyorsunuz? Hangi bilgisayar daha iyi?",
+    "prepTime": 10,
+    "speakTime": 45
+  }
+]
