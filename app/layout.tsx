@@ -16,6 +16,7 @@ export const metadata: Metadata = {
   title: "Türk Dünyası | Konuşma Sınavı",
   description: "Türk dili konuşma becerilerini ölçen profesyonel sınav platformu",
   keywords: ["Türkçe sınav", "konuşma sınavı", "Türk Dünyası", "dil sınavı"],
+  referrer: 'no-referrer-when-downgrade',
 };
 
 export default function RootLayout({
