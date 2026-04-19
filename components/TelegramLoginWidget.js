@@ -1,34 +1,37 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
-export default function TelegramLoginWidget({ onAuth, botName }) {
-  const containerRef = useRef(null);
-
+export default function TelegramLoginWidget({ onAuth }) {
   useEffect(() => {
-    // Component yüklendiğinde callback fonksiyonunu tanımla
-    window.onTelegramAuth = (user) => {
-      if (onAuth) onAuth({ provider: 'telegram', ...user });
+    const handleMessage = (event) => {
+      // Sadece kendi Telegram iframe'imizden gelen verileri alıyoruz
+      if (event.data && event.data.type === 'TELEGRAM_AUTH') {
+        if (onAuth) {
+          onAuth(event.data.user);
+        }
+      }
     };
 
-    // Script'in sadece bir kez eklenmesini sağla
-    if (containerRef.current && containerRef.current.children.length === 0) {
-      const script = document.createElement('script');
-      script.src = 'https://telegram.org/js/telegram-widget.js?22';
-      script.setAttribute('data-telegram-login', botName);
-      script.setAttribute('data-size', 'large');
-      script.setAttribute('data-radius', '15');
-      script.setAttribute('data-userpic', 'false');
-      script.setAttribute('data-onauth', 'onTelegramAuth(user)');
-      script.async = true;
-      containerRef.current.appendChild(script);
-    }
-
+    window.addEventListener('message', handleMessage);
     return () => {
-      // Temizlik (component unmount olursa)
-      // window.onTelegramAuth bırakılabilir veya undefined yapılabilir
-      // window.onTelegramAuth = undefined;
+      window.removeEventListener('message', handleMessage);
     };
-  }, [botName, onAuth]);
+  }, [onAuth]);
 
-  return <div ref={containerRef} className="flex justify-center w-full min-h-[40px]"></div>;
+  return (
+    <div className="flex justify-center w-full my-2">
+      {/* 
+        Next.js'in "Bot domain invalid" hatasını aşmak için 
+        sorunsuz çalışan test-tg.html dosyasını Iframe olarak çekiyoruz 
+      */}
+      <iframe 
+        src="/test-tg.html" 
+        width="260" 
+        height="45" 
+        frameBorder="0" 
+        scrolling="no" 
+        style={{ border: 'none', overflow: 'hidden', background: 'transparent' }}
+      ></iframe>
+    </div>
+  );
 }

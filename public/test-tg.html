@@ -2,32 +2,22 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram Login Test</title>
-    <!-- Referrer policy ekleyerek Telegram'ın kök adresi görebilmesini garanti ediyoruz -->
     <meta name="referrer" content="no-referrer-when-downgrade">
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f0f4ff;">
+<body style="margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; background: transparent; overflow: hidden;">
     
-    <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); text-align: center;">
-        <h2 style="font-family: sans-serif; color: #333;">Telegram Widget Test</h2>
-        <p style="font-family: sans-serif; color: #666; font-size: 14px; margin-bottom: 20px;">
-            Eğer bu butonda da "Bot domain invalid" yazıyorsa sorun tamamen BotFather (Geçikme/Cache) tarafındadır.
-        </p>
-
-        <!-- Resmi Telegram Embed -->
-        <script async src="https://telegram.org/js/telegram-widget.js?22" 
-                data-telegram-login="TurkDunyasiSinavBot" 
-                data-size="large" 
-                data-radius="15"
-                data-onauth="onTelegramAuth(user)"></script>
-                
-        <script type="text/javascript">
-          function onTelegramAuth(user) {
-            alert('Başarıyla giriş yaptınız! Telegram ID: ' + user.id + ' İsminiz: ' + user.first_name);
-          }
-        </script>
-    </div>
-
+    <script async src="https://telegram.org/js/telegram-widget.js?22" 
+            data-telegram-login="TurkDunyasiSinavBot" 
+            data-size="large" 
+            data-radius="15"
+            data-userpic="false"
+            data-onauth="onTelegramAuth(user)"></script>
+            
+    <script type="text/javascript">
+      function onTelegramAuth(user) {
+        // İframe içinden ana sayfaya (Next.js'e) kullanıcı bilgisini yolla
+        window.parent.postMessage({ type: 'TELEGRAM_AUTH', user: user }, '*');
+      }
+    </script>
 </body>
 </html>
