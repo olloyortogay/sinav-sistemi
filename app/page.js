@@ -7,30 +7,59 @@ import TelegramLoginWidget from '../components/TelegramLoginWidget';
 export default function ExamInterface() {
   // ── App State Machine ──────────────────────────────────────────────────────
   // States: LOGIN | MIC_CHECK | GATEWAY | EXAM | UPLOADING | FINISHED
-  const [appState, setAppState]       = useState('LOGIN');
-  
+  const [appState, setAppState] = useState('LOGIN');
+
   // User Session Handling
   const [sessionUser, setSessionUser] = useState(null); // { id, name, email, provider, rawData }
-  
+
   // ── Exam State ─────────────────────────────────────────────────────────────
-  const [questions, setQuestions]             = useState([]);
+  const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [phase, setPhase]                     = useState('prep'); // 'prep' | 'speak'
-  const [timeLeft, setTimeLeft]               = useState(0);
-  const [fontSizeRatio, setFontSizeRatio]     = useState(1);
-  const [totalElapsed, setTotalElapsed]       = useState(0);
-  const [uploadError, setUploadError]         = useState(null);
-  const [activeVariant, setActiveVariant]     = useState('random');
+  const [phase, setPhase] = useState('prep'); // 'prep' | 'speak'
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [fontSizeRatio, setFontSizeRatio] = useState(1);
+  const [totalElapsed, setTotalElapsed] = useState(0);
+  const [uploadError, setUploadError] = useState(null);
+  const [activeVariant, setActiveVariant] = useState('random');
 
   // ── Refs ───────────────────────────────────────────────────────────────────
-  const mediaRecorderRef  = useRef(null);
-  const audioChunksRef    = useRef([]);
-  const allRecordingsRef  = useRef([]);
-  const audioContextRef   = useRef(null);
-  const analyserRef       = useRef(null);
-  const canvasRef         = useRef(null);
-  const animationRef      = useRef(null);
-  const totalTimerRef     = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const allRecordingsRef = useRef([]);
+  const audioContextRef = useRef(null);
+  const analyserRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const totalTimerRef = useRef(null);
+  // ── 🛠 MENTOR TEST KONTROLLERİ (HATA BURADAYDI, BUNLARI EKLE) ──────────────
+  const handleTestPrev = () => {
+    if (currentQuestionIndex > 0) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      setCurrentQuestionIndex(prev => prev - 1);
+      setPhase('prep');
+      setTimeLeft(0);
+    }
+  };
+
+  const handleTestNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      setCurrentQuestionIndex(prev => prev + 1);
+      setPhase('prep');
+      setTimeLeft(0);
+    }
+  };
+
+  const handleTestStopRecording = () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    setTimeLeft(0);
+  };
 
   // ── Initialization (Auth & Variant) ─────────────────────────────────────────
   useEffect(() => {
@@ -81,7 +110,7 @@ export default function ExamInterface() {
       if (tgUser) {
         setSessionUser(JSON.parse(tgUser));
       }
-    } catch(e) {}
+    } catch (e) { }
 
     return () => subscription.unsubscribe();
   }, []);
@@ -155,7 +184,7 @@ export default function ExamInterface() {
     }
     const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
     return () => clearTimeout(timer);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, phase, appState, currentItem]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
@@ -168,8 +197,8 @@ export default function ExamInterface() {
   const playTing = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx  = new AudioCtx();
-      const osc  = ctx.createOscillator();
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime);
@@ -179,15 +208,15 @@ export default function ExamInterface() {
       gain.connect(ctx.destination);
       osc.start();
       osc.stop(ctx.currentTime + 1);
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const speakText = (text) => {
     if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
-    utt.lang  = 'tr-TR';
-    utt.rate  = 0.9;
+    utt.lang = 'tr-TR';
+    utt.rate = 0.9;
     window.speechSynthesis.speak(utt);
   };
 
@@ -206,9 +235,9 @@ export default function ExamInterface() {
   const drawVisualizer = useCallback(() => {
     if (!analyserRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    const ctx    = canvas.getContext('2d');
-    const buf    = new Uint8Array(analyserRef.current.frequencyBinCount);
-    let   time   = 0;
+    const ctx = canvas.getContext('2d');
+    const buf = new Uint8Array(analyserRef.current.frequencyBinCount);
+    let time = 0;
 
     const draw = () => {
       animationRef.current = requestAnimationFrame(draw);
@@ -222,23 +251,23 @@ export default function ExamInterface() {
 
       const wave = (offset, shift, alpha, freq) => {
         ctx.beginPath();
-        ctx.lineWidth   = 1;
+        ctx.lineWidth = 1;
         ctx.strokeStyle = `rgba(0,0,0,${alpha})`;
         for (let i = 0; i < canvas.width; i++) {
           const env = Math.sin((Math.PI * i) / canvas.width);
-          const y   = canvas.height / 2 + Math.sin(i * freq + time + shift) * amp * env * offset;
+          const y = canvas.height / 2 + Math.sin(i * freq + time + shift) * amp * env * offset;
           i === 0 ? ctx.moveTo(i, y) : ctx.lineTo(i, y);
         }
         ctx.stroke();
       };
 
-      wave(1.0, 0,  0.7, 0.015);
-      wave(0.6, 2,  0.4, 0.025);
+      wave(1.0, 0, 0.7, 0.015);
+      wave(0.6, 2, 0.4, 0.025);
       wave(-0.8, 4, 0.5, 0.02);
       wave(-0.4, 1, 0.3, 0.03);
 
       ctx.beginPath();
-      ctx.lineWidth   = 1.5;
+      ctx.lineWidth = 1.5;
       ctx.strokeStyle = 'rgba(0,0,0,0.8)';
       ctx.moveTo(0, canvas.height / 2);
       ctx.lineTo(canvas.width, canvas.height / 2);
@@ -250,20 +279,20 @@ export default function ExamInterface() {
   // ── Recording ──────────────────────────────────────────────────────────────
   const startRecording = async () => {
     try {
-      const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioCtx();
-      analyserRef.current     = audioContextRef.current.createAnalyser();
+      analyserRef.current = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 2048;
       audioContextRef.current.createMediaStreamSource(stream).connect(analyserRef.current);
       drawVisualizer();
 
       recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       recorder.onstop = () => {
-        if (animationRef.current)    cancelAnimationFrame(animationRef.current);
+        if (animationRef.current) cancelAnimationFrame(animationRef.current);
         if (audioContextRef.current) audioContextRef.current.close();
 
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
@@ -273,7 +302,7 @@ export default function ExamInterface() {
       };
 
       recorder.start();
-    } catch (_) {}
+    } catch (_) { }
   };
 
   const stopRecording = () => {
@@ -312,56 +341,93 @@ export default function ExamInterface() {
   };
 
   // ── Finish & Upload ────────────────────────────────────────────────────────
+  // ── Finish & Upload (Jilet Gibi Yeni Mimari) ─────────────────────────────
   const finishAndUploadExam = async () => {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
     setUploadError(null);
     setAppState('UPLOADING');
 
-    const userName = sessionUser?.name || 'Bilinmeyen_Ogrenci';
+    // 1. İsimleri temizle (Türkçe karakter ve boşlukları jiletle)
+    const rawUserName = sessionUser?.name || 'Bilinmeyen_Ogrenci';
     const userEmail = sessionUser?.email || null;
 
-    try {
-      // 1. Ses dosyalarını Telegram'a gönder
-      const form = new FormData();
-      form.append('studentName', userName);
-      form.append('numFiles',    String(allRecordingsRef.current.length));
-      allRecordingsRef.current.forEach((rec, i) => {
-        form.append(`file${i}`,        rec.blob, 'kayit.webm');
-        form.append(`sectionName${i}`, rec.sectionName);
-      });
-      const telegramRes = await fetch('/api/sendToTelegramBulk', { method: 'POST', body: form });
-      const telegramResult = await telegramRes.json();
-      if (!telegramResult.success) setUploadError(telegramResult.error || 'Telegram hatası');
+    // Karakter temizleme fonksiyonu (Sadece harf, rakam ve alt tire bırakır)
+    const cleanStr = (str) => str.replace(/[^a-zA-Z0-9]/g, '_');
+    const safeStudentName = cleanStr(rawUserName);
 
-      // 2. Sonucu Supabase'e kaydet (Google veya Telegram fark etmeksizin)
+    try {
+      const audioLinks = [];
+
+      for (let i = 0; i < allRecordingsRef.current.length; i++) {
+        const rec = allRecordingsRef.current[i];
+        const safeSectionName = cleanStr(rec.sectionName || `Section_${i}`);
+
+        // 2. MÜKEMMEL İSİMLENDİRME: "Soru_Adi_Ogrenci_Adi_Zaman.webm"
+        // Bu sayede Telegram'da dosyalar alfabetik ve okunabilir dizilir.
+        const fileName = `${safeSectionName}_${safeStudentName}_${Date.now().toString().slice(-4)}.webm`;
+
+        // Supabase'e fırlat
+        const { data, error: uploadError } = await supabase.storage
+          .from('exam-audios')
+          .upload(fileName, rec.blob, {
+            contentType: 'audio/webm',
+            upsert: true // Eğer aynı isimde dosya varsa üzerine yazar, hata vermez.
+          });
+
+        if (uploadError) throw new Error(`Ses ${i} yüklenemedi: ` + uploadError.message);
+
+        // Herkese açık URL'yi al
+        const { data: { publicUrl } } = supabase.storage
+          .from('exam-audios')
+          .getPublicUrl(fileName);
+
+        audioLinks.push({
+          sectionName: rec.sectionName,
+          url: publicUrl
+        });
+      }
+
+      // 3. Telegram API'ye gönder (Linkleri fırlatıyoruz)
+      const telegramRes = await fetch('/api/sendToTelegramBulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentName: rawUserName,
+          audioLinks: audioLinks
+        })
+      });
+
+      const telegramResult = await telegramRes.json();
+      if (!telegramResult.success) throw new Error(telegramResult.error || 'Telegram hatası');
+
+      // 4. Veritabanına kaydet (Supabase DB)
       const dbRes = await fetch('/api/saveResult', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId:     sessionUser?.id || null, // Supabase Auth veya Telegram ID
-          userName:   userName,
-          userEmail:  userEmail,
-          variantNo:  activeVariant,
-          totalTime:  totalElapsed,
-          // İhtiyaç varsa Telegram Hash / Provider eklenebilir
+          userId: sessionUser?.id || null,
+          variantNo: activeVariant,
+          totalTime: totalElapsed,
+          sections: audioLinks
         }),
       });
       const dbResult = await dbRes.json();
 
-      // 3. E-posta adresi varsa sonuç emaili gönder
+      // 5. E-posta (Varsa)
       if (userEmail && dbResult.resultId) {
         await fetch('/api/sendResultEmail', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userName:   userName,
-            userEmail:  userEmail,
-            totalTime:  totalElapsed,
-            resultId:   dbResult.resultId,
+            userName: rawUserName,
+            userEmail: userEmail,
+            totalTime: totalElapsed,
+            resultId: dbResult.resultId,
           }),
         });
       }
     } catch (err) {
+      console.error("Kritik Hata:", err);
       setUploadError(err.message);
     }
 
@@ -386,7 +452,7 @@ export default function ExamInterface() {
             <p className="text-blue-600 font-semibold">Konuşma Sınavı</p>
             <p className="text-sm text-gray-400 mt-1">Sınava başlamak için lütfen giriş yapın</p>
           </div>
-          
+
           {/* Auth Options */}
           <div className="space-y-4 flex flex-col items-center">
             {/* Supabase Google Auth Button */}
@@ -411,11 +477,11 @@ export default function ExamInterface() {
             </div>
 
             {/* Telegram Login Widget */}
-            <TelegramLoginWidget 
-              botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || 'turkdunyasi_bot'} 
-              onAuth={handleTelegramAuth} 
+            <TelegramLoginWidget
+              botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || 'turkdunyasi_bot'}
+              onAuth={handleTelegramAuth}
             />
-            
+
             <p className="text-xs text-gray-400 mt-4 text-center px-4">
               Güvenliğiniz için giriş yapmanız istenmektedir. Çözümleriniz profilinizde saklanacaktır.
             </p>
@@ -438,7 +504,7 @@ export default function ExamInterface() {
           <div className="text-5xl mb-4">🎙️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Mikrofon Testi</h2>
           <p className="text-gray-500 mb-4">
-            Hoş geldiniz, <strong>{sessionUser?.name}</strong>!<br/>
+            Hoş geldiniz, <strong>{sessionUser?.name}</strong>!<br />
             Sınava başlamadan önce mikrofonunuzun çalıştığını doğrulayın.
           </p>
           <div className="space-y-3 mt-8">
@@ -455,7 +521,7 @@ export default function ExamInterface() {
   }
 
   // ── GATEWAY & UPLOADING & FINISHED ... 
-  
+
   if (appState === 'GATEWAY') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-700 flex flex-col items-center justify-center gap-6 relative">
@@ -500,7 +566,7 @@ export default function ExamInterface() {
           <div className="text-7xl mb-6">🎉</div>
           <h1 className="text-3xl font-extrabold text-gray-800 mb-2">Sınav Tamamlandı!</h1>
           <p className="text-gray-500 text-lg mb-8">
-            Tebrikler, <span className="font-bold text-gray-700">{sessionUser?.name}</span>!<br/>
+            Tebrikler, <span className="font-bold text-gray-700">{sessionUser?.name}</span>!<br />
             Konuşma sınavını başarıyla tamamladınız.
           </p>
 
@@ -524,7 +590,7 @@ export default function ExamInterface() {
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
             <p className="font-bold text-amber-800 mb-1">🎁 Size Özel Teklif</p>
             <p className="text-sm text-amber-700 mb-3">
-              Türkçe kurslarda <strong>%15 indirim</strong> fırsatını kaçırmayın!<br/>
+              Türkçe kurslarda <strong>%15 indirim</strong> fırsatını kaçırmayın!<br />
               Kod: <strong className="bg-amber-200 px-2 py-0.5 rounded">SINAV15</strong>
             </p>
             <a
@@ -562,7 +628,7 @@ export default function ExamInterface() {
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="font-mono font-bold text-gray-700 text-sm tracking-wider">
               {formatTime(totalElapsed)}
@@ -581,9 +647,8 @@ export default function ExamInterface() {
         <div className="flex items-center">
           {[1, 2, 3].map((step, idx) => (
             <div key={idx} className="flex items-center">
-              <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-sm transition-colors ${
-                activeSection === step ? 'bg-green-500 shadow-green-200' : 'bg-orange-400'
-              }`}>
+              <div className={`w-11 h-11 rounded-full flex items-center justify-center font-bold text-lg text-white shadow-sm transition-colors ${activeSection === step ? 'bg-green-500 shadow-green-200' : 'bg-orange-400'
+                }`}>
                 {step}
               </div>
               {idx < 2 && (
@@ -627,7 +692,7 @@ export default function ExamInterface() {
                         className="text-blue-500 hover:text-blue-700 transition" title="Soruyu Dinle">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
-                            d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2l4 4V4L9 8H7a2 2 0 00-2 2z"/>
+                            d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10v4a2 2 0 002 2h2l4 4V4L9 8H7a2 2 0 00-2 2z" />
                         </svg>
                       </button>
                     )}
@@ -693,7 +758,7 @@ export default function ExamInterface() {
                     <p className="text-yellow-600 font-bold text-sm mb-3 uppercase tracking-wide">Hazırlık Süresi</p>
                     <div className="relative flex items-center justify-center">
                       <svg className="w-36 h-36 -rotate-90">
-                        <circle cx="72" cy="72" r="62" stroke="#f3f4f6" strokeWidth="10" fill="none"/>
+                        <circle cx="72" cy="72" r="62" stroke="#f3f4f6" strokeWidth="10" fill="none" />
                         <circle cx="72" cy="72" r="62" stroke="#eab308" strokeWidth="10" fill="none"
                           strokeLinecap="round" strokeDasharray={2 * Math.PI * 62}
                           strokeDashoffset={(2 * Math.PI * 62) * (1 - timeLeft / (currentItem.prepTime || 1))}
@@ -727,6 +792,25 @@ export default function ExamInterface() {
           </>
         )}
       </div>
+
+      {/* 🛠 MENTOR TEST PANELİ (CANLIYA ÇIKMADAN ÖNCE BURAYI KOMPLE SİL!) */}
+      {appState === 'EXAM' && (
+        <div className="fixed bottom-4 right-4 bg-red-600 p-3 rounded-xl shadow-2xl z-50 border-4 border-black opacity-80 hover:opacity-100 transition-opacity">
+          <p className="text-white font-bold text-xs mb-2 uppercase text-center tracking-widest">🛠 Test Paneli</p>
+          <div className="flex gap-2">
+            <button onClick={handleTestPrev} className="bg-white text-red-600 px-3 py-2 rounded-lg font-bold hover:bg-gray-200 text-sm">
+              ⏮ Önceki
+            </button>
+            <button onClick={handleTestStopRecording} className="bg-black text-white px-3 py-2 rounded-lg font-bold hover:bg-gray-800 text-sm">
+              ⏹ Kaydı Kes
+            </button>
+            <button onClick={handleTestNext} className="bg-white text-red-600 px-3 py-2 rounded-lg font-bold hover:bg-gray-200 text-sm">
+              Sonraki ⏭
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
