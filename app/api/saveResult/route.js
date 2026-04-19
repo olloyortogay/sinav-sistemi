@@ -2,33 +2,30 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
 function getSupabase() {
-  const url   = process.env.SUPABASE_URL;
-  const token = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !token) return null;
-  return createClient(url, token);
+  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
 }
 
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userId, userName, userEmail, variantNo, totalTime, sections } = body;
+    const { userName, userEmail, variantNo, totalTime } = body;
 
     const supabase = getSupabase();
     if (!supabase) {
-      // Supabase yoksa sadece logla
-      console.warn('Supabase not configured — result not saved to DB');
+      console.warn('Supabase not configured — result not saved');
       return NextResponse.json({ success: true, saved: false });
     }
 
     const { data, error } = await supabase
       .from('exam_results')
       .insert([{
-        user_id:      userId,
-        user_name:    userName,
-        user_email:   userEmail,
-        variant_no:   variantNo,
-        total_time:   totalTime,
-        sections:     sections,
+        user_name:    userName  || 'Bilinmeyen',
+        user_email:   userEmail || null,
+        variant_no:   variantNo || 'random',
+        total_time:   totalTime || 0,
         completed_at: new Date().toISOString(),
       }])
       .select('id')

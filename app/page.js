@@ -1,29 +1,24 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateExam } from './data/questions';
-import { useUser, SignIn, UserButton } from '@clerk/nextjs';
-
-// Kullanıcı bu kadar soruyu kayıt olmadan çözebilir:
-const FREE_QUESTIONS_LIMIT = 3;
 
 export default function ExamInterface() {
   // ── App State Machine ──────────────────────────────────────────────────────
   // States: LOGIN | MIC_CHECK | GATEWAY | EXAM | UPLOADING | FINISHED
   const [appState, setAppState]       = useState('LOGIN');
   const [studentName, setStudentName] = useState('');
-
-  // ── Clerk Auth ────────────────────────────────────────────────────────────
-  const { isSignedIn, user, isLoaded } = useUser();
-  const [showAuthWall, setShowAuthWall] = useState(false);
+  const [studentEmail, setStudentEmail] = useState('');
+  const [emailError, setEmailError]   = useState('');
 
   // ── Exam State ─────────────────────────────────────────────────────────────
-  const [questions, setQuestions]                 = useState([]);
+  const [questions, setQuestions]             = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [phase, setPhase]                         = useState('prep'); // 'prep' | 'speak'
-  const [timeLeft, setTimeLeft]                   = useState(0);
-  const [fontSizeRatio, setFontSizeRatio]         = useState(1);
-  const [totalElapsed, setTotalElapsed]           = useState(0);
-  const [uploadError, setUploadError]             = useState(null);
+  const [phase, setPhase]                     = useState('prep'); // 'prep' | 'speak'
+  const [timeLeft, setTimeLeft]               = useState(0);
+  const [fontSizeRatio, setFontSizeRatio]     = useState(1);
+  const [totalElapsed, setTotalElapsed]       = useState(0);
+  const [uploadError, setUploadError]         = useState(null);
+  const [activeVariant, setActiveVariant]     = useState('random');
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const mediaRecorderRef  = useRef(null);
@@ -39,8 +34,12 @@ export default function ExamInterface() {
   useEffect(() => {
     fetch('/api/settings')
       .then(res => res.json())
-      .then(data => setQuestions(generateExam(data.activeVariant || 'random')))
-      .catch(()  => setQuestions(generateExam('random')));
+      .then(data => {
+        const v = data.activeVariant || 'random';
+        setActiveVariant(v);
+        setQuestions(generateExam(v));
+      })
+      .catch(() => setQuestions(generateExam('random')));
   }, []);
 
   const currentItem = questions.length > 0 ? questions[currentQuestionIndex] : null;
@@ -79,11 +78,13 @@ export default function ExamInterface() {
     return `${m}:${s}`;
   };
 
+  const validateEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const playTing = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
+      const ctx  = new AudioCtx();
+      const osc  = ctx.createOscillator();
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(880, ctx.currentTime);
@@ -103,6 +104,17 @@ export default function ExamInterface() {
     utt.lang  = 'tr-TR';
     utt.rate  = 0.9;
     window.speechSynthesis.speak(utt);
+  };
+
+  // ── Login validation ───────────────────────────────────────────────────────
+  const handleLogin = () => {
+    if (!studentName.trim()) { alert('Ad soyad zorunludur'); return; }
+    if (!validateEmail(studentEmail)) {
+      setEmailError('Lütfen geçerli bir e-posta adresi girin');
+      return;
+    }
+    setEmailError('');
+    setAppState('MIC_CHECK');
   };
 
   // ── Microphone Test ────────────────────────────────────────────────────────
@@ -127,7 +139,6 @@ export default function ExamInterface() {
     const draw = () => {
       animationRef.current = requestAnimationFrame(draw);
       analyserRef.current.getByteTimeDomainData(buf);
-
       let sq = 0;
       buf.forEach(v => { const n = (v / 128) - 1; sq += n * n; });
       const amp = Math.max(2, Math.sqrt(sq / buf.length) * 200);
@@ -165,11 +176,11 @@ export default function ExamInterface() {
   // ── Recording ──────────────────────────────────────────────────────────────
   const startRecording = async () => {
     try {
-      const stream    = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const recorder  = new MediaRecorder(stream);
+      const stream   = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
-      const AudioCtx        = window.AudioContext || window.webkitAudioContext;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
       audioContextRef.current = new AudioCtx();
       analyserRef.current     = audioContextRef.current.createAnalyser();
       analyserRef.current.fftSize = 2048;
@@ -178,8 +189,8 @@ export default function ExamInterface() {
 
       recorder.ondataavailable = e => { if (e.data.size > 0) audioChunksRef.current.push(e.data); };
       recorder.onstop = () => {
-        if (animationRef.current)      cancelAnimationFrame(animationRef.current);
-        if (audioContextRef.current)   audioContextRef.current.close();
+        if (animationRef.current)    cancelAnimationFrame(animationRef.current);
+        if (audioContextRef.current) audioContextRef.current.close();
 
         const blob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
         allRecordingsRef.current.push({ blob, sectionName: currentItem?.section || 'Soru' });
@@ -202,15 +213,6 @@ export default function ExamInterface() {
   // ── Navigation ─────────────────────────────────────────────────────────────
   const goToNextItem = () => {
     const nextIndex = currentQuestionIndex + 1;
-
-    // 🔒 HAVUÇ STRATEJİSİ: Ücretsiz limit aşıldıysa ve kullanıcı giriş yapmadıysa duvar göster
-    const answeredQuestions = allRecordingsRef.current.length;
-    if (!isSignedIn && answeredQuestions >= FREE_QUESTIONS_LIMIT) {
-      setShowAuthWall(true);
-      if (totalTimerRef.current) clearInterval(totalTimerRef.current);
-      return;
-    }
-
     if (nextIndex < questions.length) {
       const next = questions[nextIndex];
       setCurrentQuestionIndex(nextIndex);
@@ -243,6 +245,7 @@ export default function ExamInterface() {
     setAppState('UPLOADING');
 
     try {
+      // 1. Ses dosyalarını Telegram'a gönder
       const form = new FormData();
       form.append('studentName', studentName || 'Bilinmeyen_Ogrenci');
       form.append('numFiles',    String(allRecordingsRef.current.length));
@@ -250,10 +253,36 @@ export default function ExamInterface() {
         form.append(`file${i}`,        rec.blob, 'kayit.webm');
         form.append(`sectionName${i}`, rec.sectionName);
       });
+      const telegramRes = await fetch('/api/sendToTelegramBulk', { method: 'POST', body: form });
+      const telegramResult = await telegramRes.json();
+      if (!telegramResult.success) setUploadError(telegramResult.error || 'Telegram hatası');
 
-      const res    = await fetch('/api/sendToTelegramBulk', { method: 'POST', body: form });
-      const result = await res.json();
-      if (!result.success) setUploadError(result.error || 'Bilinmeyen hata');
+      // 2. Sonucu Supabase'e kaydet
+      const dbRes = await fetch('/api/saveResult', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userName:   studentName,
+          userEmail:  studentEmail,
+          variantNo:  activeVariant,
+          totalTime:  totalElapsed,
+        }),
+      });
+      const dbResult = await dbRes.json();
+
+      // 3. Sonuç emaili gönder (Resend yapılandırıldıysa)
+      if (studentEmail && dbResult.resultId) {
+        await fetch('/api/sendResultEmail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            userName:   studentName,
+            userEmail:  studentEmail,
+            totalTime:  totalElapsed,
+            resultId:   dbResult.resultId,
+          }),
+        });
+      }
     } catch (err) {
       setUploadError(err.message);
     }
@@ -262,7 +291,7 @@ export default function ExamInterface() {
   };
 
   // ══════════════════════════════════════════════════════════════════════════
-  // RENDER — STATE SCREENS
+  // RENDER
   // ══════════════════════════════════════════════════════════════════════════
 
   // ── LOGIN ──────────────────────────────────────────────────────────────────
@@ -280,16 +309,33 @@ export default function ExamInterface() {
             <p className="text-sm text-gray-400 mt-1">by Marjona hoca</p>
           </div>
           <div className="space-y-4">
-            <input
-              type="text"
-              className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-black text-lg transition"
-              placeholder="Ismingiz va Familiyangiz"
-              value={studentName}
-              onChange={e => setStudentName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && studentName.trim() && setAppState('MIC_CHECK')}
-            />
+            <div>
+              <input
+                type="text"
+                className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-black text-lg transition"
+                placeholder="Ismingiz va Familiyangiz"
+                value={studentName}
+                onChange={e => setStudentName(e.target.value)}
+              />
+            </div>
+            <div>
+              <input
+                type="email"
+                className={`w-full px-4 py-3 rounded-xl border-2 ${emailError ? 'border-red-400' : 'border-blue-200'} focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-black text-lg transition`}
+                placeholder="E-posta adresiniz"
+                value={studentEmail}
+                onChange={e => { setStudentEmail(e.target.value); setEmailError(''); }}
+                onKeyDown={e => e.key === 'Enter' && handleLogin()}
+              />
+              {emailError && (
+                <p className="text-red-500 text-sm mt-1 pl-1">{emailError}</p>
+              )}
+              <p className="text-xs text-gray-400 mt-1 pl-1">
+                📬 Sonuç raporunuz bu adrese gönderilecektir
+              </p>
+            </div>
             <button
-              onClick={() => studentName.trim() ? setAppState('MIC_CHECK') : alert('Ad soyad zorunludur')}
+              onClick={handleLogin}
               className="w-full bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold py-3 rounded-xl text-lg transition-all shadow-lg shadow-blue-200"
             >
               Kirish →
@@ -347,7 +393,6 @@ export default function ExamInterface() {
           <div className="text-6xl mb-6 animate-bounce">📤</div>
           <h2 className="text-2xl font-extrabold text-gray-800 mb-3">Ses Dosyaları Gönderiliyor</h2>
           <p className="text-gray-500 mb-8">Lütfen bekleyin. Kayıtlarınız güvenle iletiliyor...</p>
-          {/* Spinner */}
           <div className="flex justify-center mb-6">
             <div className="w-14 h-14 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
           </div>
@@ -361,85 +406,61 @@ export default function ExamInterface() {
   if (appState === 'FINISHED') {
     const mins = Math.floor(totalElapsed / 60);
     const secs = totalElapsed % 60;
+    const timeStr = mins > 0 ? `${mins} dk ${secs} sn` : `${secs} sn`;
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-6">
         <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-green-100">
-          {/* Konfeti ikonu */}
           <div className="text-7xl mb-6">🎉</div>
           <h1 className="text-3xl font-extrabold text-gray-800 mb-2">Sınav Tamamlandı!</h1>
-          <p className="text-gray-500 text-lg mb-8">Tebrikler, {studentName}! Başarıyla tamamladınız.</p>
+          <p className="text-gray-500 text-lg mb-8">
+            Tebrikler, <span className="font-bold text-gray-700">{studentName}</span>!<br/>
+            Konuşma sınavını başarıyla tamamladınız.
+          </p>
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <div className="bg-blue-50 rounded-2xl p-4 border border-blue-100">
+          {/* İstatistikler */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
               <p className="text-3xl font-extrabold text-blue-600">{allRecordingsRef.current.length}</p>
               <p className="text-sm text-gray-500 mt-1">Kayıt Tamamlandı</p>
             </div>
-            <div className="bg-green-50 rounded-2xl p-4 border border-green-100">
-              <p className="text-3xl font-extrabold text-green-600">
-                {mins > 0 ? `${mins}d ${secs}s` : `${secs}s`}
-              </p>
+            <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
+              <p className="text-3xl font-extrabold text-green-600">{timeStr}</p>
               <p className="text-sm text-gray-500 mt-1">Toplam Süre</p>
             </div>
           </div>
 
-          {uploadError ? (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-sm text-red-600">
-              ⚠️ Gönderim sırasında hata oluştu: {uploadError}
-              <br/>Lütfen sınav gözetmenine bildirin.
-            </div>
-          ) : (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 text-sm text-green-700">
-              ✅ Ses kayıtlarınız başarıyla iletildi.
+          {/* E-posta bildirimi */}
+          {studentEmail && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-700">
+              📬 Sonuç raporunuz <strong>{studentEmail}</strong> adresine gönderilecektir
             </div>
           )}
 
-          <div className="text-gray-400 text-sm space-y-1">
-            <p>🏛️ Türk Dünyası | Konuşma Sınavı</p>
-            <p>Sayfa kapatılabilir.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // ── AUTH WALL (Havuç Stratejisi) ──────────────────────────────────────────
-  if (showAuthWall) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-800 flex items-center justify-center p-6">
-        <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden">
-          {/* Üst başlık */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 text-center">
-            <div className="text-5xl mb-3">🔐</div>
-            <h2 className="text-2xl font-extrabold text-white">Harika Gidiyorsunuz!</h2>
-            <p className="text-blue-200 mt-2">İlk {FREE_QUESTIONS_LIMIT} soruyu başarıyla tamamladınız</p>
-          </div>
-          {/* Kart içeriği */}
-          <div className="p-8">
-            <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-6 text-center">
-              <p className="text-yellow-800 font-semibold text-sm">
-                ✨ Sınavın tamamını tamamlamak ve<br/>
-                <strong>kişisel sonuç raporunuzu</strong> almak için giriş yapın
-              </p>
-            </div>
-            {/* Clerk SignIn bileşeni — Google, Telegram vs. otomatik görünür */}
-            <SignIn
-              routing="hash"
-              afterSignInUrl={`${typeof window !== 'undefined' ? window.location.href : ''}#resume`}
-              appearance={{
-                elements: {
-                  card: 'shadow-none border-0',
-                  headerTitle: 'hidden',
-                  headerSubtitle: 'hidden',
-                  socialButtonsBlockButton: 'border border-gray-200 hover:border-blue-400 transition',
-                  formButtonPrimary: 'bg-blue-600 hover:bg-blue-700',
-                },
-              }}
-            />
-            <p className="text-center text-xs text-gray-400 mt-4">
-              Giriş yaptıktan sonra sınavınıza kaldığınız yerden devam edeceksiniz
+          {/* Kurs teklifi */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <p className="font-bold text-amber-800 mb-1">🎁 Size Özel Teklif</p>
+            <p className="text-sm text-amber-700 mb-3">
+              Türkçe kurslarda <strong>%15 indirim</strong> fırsatını kaçırmayın!<br/>
+              Kod: <strong className="bg-amber-200 px-2 py-0.5 rounded">SINAV15</strong>
             </p>
+            <a
+              href="https://turkdunyasi.uz"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg text-sm transition"
+            >
+              Kurslara Göz At →
+            </a>
           </div>
+
+          {/* Hata bilgisi */}
+          {uploadError && (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
+              ⚠️ Hata: {uploadError}. Lütfen sınav gözetmenine bildirin.
+            </div>
+          )}
+
+          <p className="text-gray-400 text-xs mt-6">🏛️ Türk Dünyası | Sayfa kapatılabilir.</p>
         </div>
       </div>
     );
@@ -460,15 +481,14 @@ export default function ExamInterface() {
           {/* Kronometre */}
           <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
             <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             <span className="font-mono font-bold text-gray-700 text-sm tracking-wider">
               {formatTime(totalElapsed)}
             </span>
           </div>
           <p className="font-semibold text-gray-700">{studentName}</p>
-          {/* Clerk kullanıcı butonu — giriş yapıldıysa avatar göster */}
-          {isSignedIn && <UserButton afterSignOutUrl="/" />}
         </div>
       </header>
 
@@ -516,12 +536,14 @@ export default function ExamInterface() {
                 <div className="flex justify-between items-center border-b pb-3 mb-4">
                   <span className="font-bold text-gray-800">{currentItem.section}</span>
                   <div className="flex items-center gap-3">
-                    {/* A- / A+ */}
                     <button onClick={() => setFontSizeRatio(p => Math.max(0.7, p - 0.1))}
-                      className="border px-4 py-1 rounded-lg text-gray-600 font-bold hover:bg-gray-100 text-sm transition">A-</button>
+                      className="border px-4 py-1 rounded-lg text-gray-600 font-bold hover:bg-gray-100 text-sm transition">
+                      A-
+                    </button>
                     <button onClick={() => setFontSizeRatio(p => Math.min(1.5, p + 0.1))}
-                      className="border-2 border-blue-400 px-4 py-1 rounded-lg text-blue-500 font-bold hover:bg-blue-50 text-sm transition">A+</button>
-                    {/* TTS İkonu — sadece hazırlık aşamasında */}
+                      className="border-2 border-blue-400 px-4 py-1 rounded-lg text-blue-500 font-bold hover:bg-blue-50 text-sm transition">
+                      A+
+                    </button>
                     {currentItem.hasAudioBtn !== false && phase === 'prep' && (
                       <button onClick={() => speakText(currentItem.question || '')}
                         className="text-blue-500 hover:text-blue-700 transition" title="Soruyu Dinle">
@@ -536,7 +558,6 @@ export default function ExamInterface() {
 
                 {/* Soru İçeriği */}
                 <div className="text-black" style={{ fontSize: `${1.2 * fontSizeRatio}rem` }}>
-
                   {/* Fotoğraf */}
                   {currentItem.image_url && (
                     <div className="mb-5 flex justify-center">
@@ -549,23 +570,23 @@ export default function ExamInterface() {
                   {/* Tek soru metni */}
                   {!currentItem.lists && currentItem.question && (
                     <div className="flex items-start gap-2 font-bold">
-                      <span className="text-blue-500 text-xl">•</span>
+                      <span className="text-blue-500 text-xl flex-shrink-0">•</span>
                       <p>{currentItem.question}</p>
                     </div>
                   )}
 
-                  {/* Madde madde sorular (2. Bölüm) */}
+                  {/* Madde madde (bullets) */}
                   {currentItem.bullets && (
                     <ul className="mt-2 space-y-3">
                       {currentItem.bullets.map((b, i) => (
                         <li key={i} className="flex font-bold gap-2">
-                          <span className="text-blue-500">•</span> {b}
+                          <span className="text-blue-500 flex-shrink-0">•</span> {b}
                         </li>
                       ))}
                     </ul>
                   )}
 
-                  {/* Lehine / Aleyhine Tablosu (3. Bölüm) */}
+                  {/* Lehine / Aleyhine Tablosu */}
                   {currentItem.lists && (
                     <div className="mt-4 border-2 border-[#1B52B3] rounded-lg overflow-hidden"
                       style={{ fontSize: `${1.2 * fontSizeRatio}rem` }}>
@@ -586,8 +607,8 @@ export default function ExamInterface() {
                             <ul className="p-4 space-y-3">
                               {currentItem.lists[col.key].map((item, i) => (
                                 <li key={i} className="flex gap-2 font-medium">
-                                  <span className="font-bold text-[#1B52B3]">•</span>
-                                  <span className="flex-1">{item}</span>
+                                  <span className="font-bold text-[#1B52B3] flex-shrink-0">•</span>
+                                  <span>{item}</span>
                                 </li>
                               ))}
                             </ul>

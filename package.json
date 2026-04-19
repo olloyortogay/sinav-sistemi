@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.2.3",
     "@supabase/supabase-js": "^2.103.3",
     "@upstash/redis": "^1.37.0",
     "html2canvas": "^1.4.1",
