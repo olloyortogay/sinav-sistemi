@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Redis } from '@upstash/redis';
+import { randomUUID } from 'crypto';
 
 function getRedis() {
   const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
@@ -38,12 +39,24 @@ export async function POST(request) {
 
     if (action === 'LOGIN') {
       if (username === storedUser && password === storedPass) {
-        return NextResponse.json({ success: true, token: 'authenticated' });
+        const token = randomUUID();
+        const activeSessions = store.adminSessions || [];
+        activeSessions.push(token);
+        await writeStore({ adminSessions: activeSessions });
+        return NextResponse.json({ success: true, token });
       }
       return NextResponse.json({ success: false, error: 'Kullanıcı adı veya şifre hatalı' }, { status: 401 });
     }
 
     if (action === 'CHANGE_CREDENTIALS') {
+      const authHeader = request.headers.get('authorization');
+      const token = authHeader?.split(' ')[1];
+      const activeSessions = store.adminSessions || [];
+      
+      if (!token || !activeSessions.includes(token)) {
+         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      }
+
       if (username !== storedUser || password !== storedPass) {
         return NextResponse.json({ success: false, error: 'Mevcut bilgiler hatalı' }, { status: 401 });
       }

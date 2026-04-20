@@ -44,6 +44,16 @@ export async function GET() {
 
 export async function POST(request) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader?.split(' ')[1];
+    
+    const store = await readStore();
+    const sessions = store.adminSessions || [];
+    
+    if (!token || !sessions.includes(token)) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const { variant } = await request.json();
     await writeStore({ activeVariant: String(variant) });
     return NextResponse.json({ success: true, activeVariant: variant });

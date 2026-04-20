@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 export async function POST(request) {
   try {
-    const { userName, userEmail, totalTime, resultId } = await request.json();
+    const { userName, userEmail, totalTime, resultId, score } = await request.json();
 
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not set — skipping email');
@@ -21,7 +21,7 @@ export async function POST(request) {
     const { error } = await resend.emails.send({
       from: 'Türk Dünyası <sinav@turkdunyasi.uz>',
       to:   [userEmail],
-      subject: `🎉 Konuşma Sınavı Sonucunuz Hazır — ${userName}`,
+      subject: score !== undefined ? `🎉 Sınav Sonucu ve Puanınız — ${userName}` : `🎉 Konuşma Sınavı Tamamlandı — ${userName}`,
       html: `
         <!DOCTYPE html>
         <html lang="tr">
@@ -38,13 +38,20 @@ export async function POST(request) {
 
             <!-- Stats -->
             <div style="padding:32px;display:flex;gap:16px;justify-content:center">
+              ${score !== undefined ? `
+                <div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
+                  <div style="font-size:28px;font-weight:900;color:#854d0e">${score}</div>
+                  <div style="font-size:13px;color:#a16207;margin-top:4px">Sınav Puanı</div>
+                </div>
+              ` : `
+                <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
+                  <div style="font-size:28px;font-weight:900;color:#16a34a">3 Bölüm</div>
+                  <div style="font-size:13px;color:#6b7280;margin-top:4px">Tamamlandı</div>
+                </div>
+              `}
               <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
                 <div style="font-size:28px;font-weight:900;color:#1B52B3">${timeStr}</div>
                 <div style="font-size:13px;color:#6b7280;margin-top:4px">Toplam Süre</div>
-              </div>
-              <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
-                <div style="font-size:28px;font-weight:900;color:#16a34a">3 Bölüm</div>
-                <div style="font-size:13px;color:#6b7280;margin-top:4px">Tamamlandı</div>
               </div>
             </div>
 

@@ -136,6 +136,10 @@ export default function AdminPage() {
   const [newPass, setNewPass] = useState('');
   const [credsMsg, setCredsMsg] = useState('');
 
+  const [activeTab, setActiveTab] = useState('variants');
+  const [results, setResults] = useState([]);
+  const [loadingResults, setLoadingResults] = useState(false);
+
   const allVariants = generateAllVariants();
 
   const fetchSettings = useCallback(async () => {
@@ -146,12 +150,27 @@ export default function AdminPage() {
     } catch (_) {}
   }, []);
 
+  const fetchResults = useCallback(async () => {
+    setLoadingResults(true);
+    const token = localStorage.getItem('admin_token');
+    try {
+      const res = await fetch('/api/results', {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      });
+      const d = await res.json();
+      if (d.success) setResults(d.data || []);
+    } catch (err) {}
+    setLoadingResults(false);
+  }, []);
+
   useEffect(() => {
-    if (localStorage.getItem('admin_token') === 'authenticated') {
+    const token = localStorage.getItem('admin_token');
+    if (token) {
       setIsAuth(true);
       fetchSettings();
+      fetchResults();
     }
-  }, [fetchSettings]);
+  }, [fetchSettings, fetchResults]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -173,9 +192,13 @@ export default function AdminPage() {
 
   const saveVariant = async (variant) => {
     setIsSaving(true);
+    const token = localStorage.getItem('admin_token');
     await fetch('/api/settings', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ variant }),
     });
     setActiveVariant(variant);
@@ -185,9 +208,13 @@ export default function AdminPage() {
   const handleChangeCreds = async (e) => {
     e.preventDefault();
     setCredsMsg('');
+    const token = localStorage.getItem('admin_token');
     const res = await fetch('/api/adminAuth', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({
         action: 'CHANGE_CREDENTIALS',
         username: curUser, password: curPass,
@@ -274,6 +301,20 @@ export default function AdminPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-8">
+        
+        {/* TABS */}
+        <div className="flex gap-4 border-b border-gray-200">
+          <button 
+            onClick={() => setActiveTab('variants')}
+            className={`pb-3 font-bold text-lg px-2 transition ${activeTab === 'variants' ? 'border-b-4 border-blue-600 text-blue-800' : 'text-gray-400 hover:text-gray-700 border-transparent'}`}>
+            Sınav Varyantları
+          </button>
+          <button 
+            onClick={() => setActiveTab('results')}
+            className={`pb-3 font-bold text-lg px-2 transition ${activeTab === 'results' ? 'border-b-4 border-blue-600 text-blue-800' : 'text-gray-400 hover:text-gray-700 border-transparent'}`}>
+            Sınav Sonuçları
+          </button>
+        </div>
 
         {/* Credentials Panel */}
         {showCreds && (
@@ -310,69 +351,129 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* Variant Grid */}
-        <div className="bg-white rounded-xl shadow border p-6">
-          <h2 className="text-lg font-extrabold text-gray-800 mb-1">Soru Varyantları</h2>
-          <p className="text-gray-500 text-sm mb-6">
-            Bir varyantı <strong>aktif</strong> etmek için kartına tıklayın. PDF indirmek için o kartın 📄 düğmesine tıklayın.
-          </p>
-          {isSaving && <div className="text-blue-600 font-bold text-sm mb-4 animate-pulse">💾 Kaydediliyor...</div>}
+        {/* Variant Grid Tab */}
+        {activeTab === 'variants' && (
+          <div className="bg-white rounded-xl shadow border p-6">
+            <h2 className="text-lg font-extrabold text-gray-800 mb-1">Soru Varyantları</h2>
+            <p className="text-gray-500 text-sm mb-6">
+              Bir varyantı <strong>aktif</strong> etmek için kartına tıklayın. PDF indirmek için o kartın 📄 düğmesine tıklayın.
+            </p>
+            {isSaving && <div className="text-blue-600 font-bold text-sm mb-4 animate-pulse">💾 Kaydediliyor...</div>}
 
-          {/* Rastgele kart */}
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-4">
-            <div onClick={() => saveVariant('random')}
-              className={`p-4 border-2 rounded-xl cursor-pointer transition ${activeVariant === 'random' ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300'}`}>
-              <div className="flex justify-between items-start mb-2">
-                <span className="text-2xl">🎲</span>
-                {activeVariant === 'random' && <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">Aktif</span>}
+            {/* Rastgele kart */}
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 mb-4">
+              <div onClick={() => saveVariant('random')}
+                className={`p-4 border-2 rounded-xl cursor-pointer transition ${activeVariant === 'random' ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300'}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <span className="text-2xl">🎲</span>
+                  {activeVariant === 'random' && <span className="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">Aktif</span>}
+                </div>
+                <h3 className="font-bold text-gray-800 text-sm">Rastgele</h3>
+                <p className="text-gray-400 text-xs mt-1">Her öğrenciye benzersiz sınav</p>
               </div>
-              <h3 className="font-bold text-gray-800 text-sm">Rastgele</h3>
-              <p className="text-gray-400 text-xs mt-1">Her öğrenciye benzersiz sınav</p>
             </div>
-          </div>
 
-          {/* 50 Varyant */}
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {allVariants.map(v => {
-              const isActive = activeVariant === String(v.variantNo);
-              const isPdfLoading = pdfLoadingId === v.variantNo;
+            {/* 50 Varyant */}
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {allVariants.map(v => {
+                const isActive = activeVariant === String(v.variantNo);
+                const isPdfLoading = pdfLoadingId === v.variantNo;
 
-              return (
-                <div key={v.variantNo}
-                  className={`p-4 border-2 rounded-xl transition ${isActive ? 'border-green-600 bg-green-50 shadow-md' : 'border-gray-200 hover:border-green-300'}`}>
-                  {/* Header */}
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <span className="font-extrabold text-gray-700 text-xl">V{v.variantNo}</span>
-                      {isActive && <span className="ml-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">Aktif</span>}
+                return (
+                  <div key={v.variantNo}
+                    className={`p-4 border-2 rounded-xl transition ${isActive ? 'border-green-600 bg-green-50 shadow-md' : 'border-gray-200 hover:border-green-300'}`}>
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <span className="font-extrabold text-gray-700 text-xl">V{v.variantNo}</span>
+                        {isActive && <span className="ml-2 bg-green-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">Aktif</span>}
+                      </div>
+                    </div>
+
+                    {/* Preview mini */}
+                    <div className="text-xs text-gray-500 space-y-0.5 mb-3 truncate">
+                      <p className="truncate">📝 {v.part1Questions[0]?.question?.slice(0, 32)}…</p>
+                      <p className="truncate">🖼 {v.part2Scenario?.bullets?.[0]?.slice(0, 32)}…</p>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => saveVariant(String(v.variantNo))}
+                        className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition ${isActive ? 'bg-green-100 text-green-700 cursor-default' : 'bg-gray-100 hover:bg-green-100 text-gray-700 hover:text-green-700'}`}>
+                        {isActive ? '✓ Aktif' : 'Seç'}
+                      </button>
+                      <button
+                        onClick={() => handlePdfDownload(v)}
+                        disabled={isPdfLoading}
+                        className="flex-1 text-xs font-bold py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition disabled:opacity-50">
+                        {isPdfLoading ? '⏳' : '📄 PDF'}
+                      </button>
                     </div>
                   </div>
-
-                  {/* Preview mini */}
-                  <div className="text-xs text-gray-500 space-y-0.5 mb-3 truncate">
-                    <p className="truncate">📝 {v.part1Questions[0]?.question?.slice(0, 32)}…</p>
-                    <p className="truncate">🖼 {v.part2Scenario?.bullets?.[0]?.slice(0, 32)}…</p>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => saveVariant(String(v.variantNo))}
-                      className={`flex-1 text-xs font-bold py-1.5 rounded-lg transition ${isActive ? 'bg-green-100 text-green-700 cursor-default' : 'bg-gray-100 hover:bg-green-100 text-gray-700 hover:text-green-700'}`}>
-                      {isActive ? '✓ Aktif' : 'Seç'}
-                    </button>
-                    <button
-                      onClick={() => handlePdfDownload(v)}
-                      disabled={isPdfLoading}
-                      className="flex-1 text-xs font-bold py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 transition disabled:opacity-50">
-                      {isPdfLoading ? '⏳' : '📄 PDF'}
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Results Tab */}
+        {activeTab === 'results' && (
+          <div className="bg-white rounded-xl shadow border p-0 overflow-hidden">
+             <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                <div>
+                  <h2 className="text-lg font-extrabold text-gray-800">Son Sınav Kayıtları</h2>
+                  <p className="text-gray-500 text-sm mt-1">Sınavı tamamlayan öğrencilerin veritabanı kayıtları (En yeni en üstte).</p>
+                </div>
+                <button onClick={fetchResults} className="bg-blue-50 text-blue-600 px-4 py-2 font-bold rounded-lg text-sm hover:bg-blue-100 transition">
+                  🔄 Yenile
+                </button>
+             </div>
+             
+             <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm text-gray-600">
+                  <thead className="bg-gray-50 text-gray-700 uppercase font-bold border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-4">Öğrenci Adı</th>
+                      <th className="px-6 py-4">E-posta</th>
+                      <th className="px-6 py-4 text-center">Varyant</th>
+                      <th className="px-6 py-4 text-center">Süre</th>
+                      <th className="px-6 py-4 text-center">Puan</th>
+                      <th className="px-6 py-4">Tarih</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loadingResults ? (
+                      <tr><td colSpan="6" className="text-center py-8 text-gray-500">Yükleniyor...</td></tr>
+                    ) : results.length === 0 ? (
+                      <tr><td colSpan="6" className="text-center py-8 text-gray-500 font-medium">Henüz bir sınav kaydı bulunmuyor.</td></tr>
+                    ) : (
+                      results.map(r => (
+                        <tr key={r.id} className="border-b last:border-b-0 hover:bg-gray-50 transition">
+                          <td className="px-6 py-4 font-bold text-gray-900">{r.user_name}</td>
+                          <td className="px-6 py-4 text-gray-500">{r.user_email || '-'}</td>
+                          <td className="px-6 py-4 text-center font-mono font-bold">{r.variant_no}</td>
+                          <td className="px-6 py-4 text-center font-mono">
+                             {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            {r.score !== null ? (
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md font-bold text-xs">{r.score}</span>
+                            ) : (
+                              <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md font-medium text-xs">Puan Bekliyor</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-gray-500 text-xs">
+                            {new Date(r.completed_at).toLocaleString('tr-TR')}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+             </div>
+          </div>
+        )}
       </div>
     </div>
   );

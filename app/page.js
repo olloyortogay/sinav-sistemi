@@ -21,6 +21,7 @@ export default function ExamInterface() {
   const [totalElapsed, setTotalElapsed] = useState(0);
   const [uploadError, setUploadError] = useState(null);
   const [activeVariant, setActiveVariant] = useState('random');
+  const [isOffline, setIsOffline] = useState(false);
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const mediaRecorderRef = useRef(null);
@@ -31,35 +32,7 @@ export default function ExamInterface() {
   const canvasRef = useRef(null);
   const animationRef = useRef(null);
   const totalTimerRef = useRef(null);
-  // ── 🛠 MENTOR TEST KONTROLLERİ (HATA BURADAYDI, BUNLARI EKLE) ──────────────
-  const handleTestPrev = () => {
-    if (currentQuestionIndex > 0) {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-      setCurrentQuestionIndex(prev => prev - 1);
-      setPhase('prep');
-      setTimeLeft(0);
-    }
-  };
 
-  const handleTestNext = () => {
-    if (currentQuestionIndex < questions.length - 1) {
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-      setCurrentQuestionIndex(prev => prev + 1);
-      setPhase('prep');
-      setTimeLeft(0);
-    }
-  };
-
-  const handleTestStopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
-    }
-    setTimeLeft(0);
-  };
 
   // ── Initialization (Auth & Variant) ─────────────────────────────────────────
   useEffect(() => {
@@ -186,6 +159,29 @@ export default function ExamInterface() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, phase, appState, currentItem]);
+
+  // ── Sayfa Yenileme & Offline Koruması ──────────────────────────────────────
+  useEffect(() => {
+    const setOff = () => setIsOffline(true);
+    const setOn = () => setIsOffline(false);
+    window.addEventListener('offline', setOff);
+    window.addEventListener('online', setOn);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) setIsOffline(true);
+
+    const guard = (e) => {
+      if (appState === 'EXAM' || appState === 'UPLOADING') {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', guard);
+
+    return () => {
+      window.removeEventListener('offline', setOff);
+      window.removeEventListener('online', setOn);
+      window.removeEventListener('beforeunload', guard);
+    };
+  }, [appState]);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const formatTime = (seconds) => {
@@ -387,47 +383,63 @@ export default function ExamInterface() {
         });
       }
 
-      // 3. Telegram API'ye gönder (Linkleri fırlatıyoruz)
-      const telegramRes = await fetch('/api/sendToTelegramBulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          studentName: rawUserName,
-          audioLinks: audioLinks
-        })
-      });
+      // 3. Telegram API'ye gönder (Audio linkleri toplu gönder)
+      try {
+        const telegramRes = await fetch('/api/sendToTelegramBulk', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ studentName: rawUserName, audioLinks }),
+        });
+        const telegramResult = await telegramRes.json();
+        if (!telegramResult.success) console.error('Telegram hatası:', telegramResult.error);
+        else console.log('Telegram: kayıtlar başarıyla gönderildi.');
+      } catch (tgErr) {
+        console.error('Telegram bağlantı hatası (devam ediyoruz):', tgErr);
+      }
 
-      const telegramResult = await telegramRes.json();
-      if (!telegramResult.success) throw new Error(telegramResult.error || 'Telegram hatası');
+      // --- 1. ÖNCE E-POSTAYI ATEŞLE ---
+      if (userEmail) {
+        try {
+          await fetch('/api/sendResultEmail', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userName: rawUserName,
+              userEmail: userEmail,
+              totalTime: totalElapsed,
+            }),
+          });
+          console.log("E-posta başarıyla sıraya alındı.");
+        } catch (mailErr) {
+          console.error("E-posta gönderim hatası (ama devam ediyoruz):", mailErr);
+        }
+      }
 
-      // 4. Veritabanına kaydet (Supabase DB)
-      const dbRes = await fetch('/api/saveResult', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: sessionUser?.id || null,
-          variantNo: activeVariant,
-          totalTime: totalElapsed,
-          sections: audioLinks
-        }),
-      });
-      const dbResult = await dbRes.json();
-
-      // 5. E-posta (Varsa)
-      if (userEmail && dbResult.resultId) {
-        await fetch('/api/sendResultEmail', {
+      // --- 2. VERİTABANINA KAYDET ---
+      try {
+        const dbRes = await fetch('/api/saveResult', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             userName: rawUserName,
             userEmail: userEmail,
-            totalTime: totalElapsed,
-            resultId: dbResult.resultId,
+            telegramAuthId: sessionUser?.provider === 'telegram' ? sessionUser.id : null,
+            variantNo: activeVariant,
+            totalTime: Number(totalElapsed),
           }),
         });
+        if (!dbRes.ok) {
+          const errorData = await dbRes.json();
+          console.error("Veritabanı Hatası:", errorData);
+        } else {
+          console.log("Veritabanı kaydı başarılı!");
+        }
+      } catch (dbErr) {
+        console.error("Veritabanı bağlantı hatası:", dbErr);
       }
+
     } catch (err) {
-      console.error("Kritik Hata:", err);
+      console.error("Kritik Genel Hata:", err);
       setUploadError(err.message);
     }
 
@@ -441,8 +453,8 @@ export default function ExamInterface() {
   // ── LOGIN ──────────────────────────────────────────────────────────────────
   if (appState === 'LOGIN') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
-        <div className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-blue-100">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
+        <div className="bg-white p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-blue-100">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -494,13 +506,13 @@ export default function ExamInterface() {
   // ── MIC CHECK ─────────────────────────────────────────────────────────────
   if (appState === 'MIC_CHECK') {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 text-center relative">
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-6 text-center relative">
         {/* Hızlı Çıkış (Logout) */}
-        <button onClick={handleLogout} className="absolute top-6 right-6 text-gray-500 hover:text-red-500 font-medium transition">
+        <button onClick={handleLogout} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-gray-500 hover:text-red-500 font-medium transition text-sm sm:text-base">
           Çıkış Yap
         </button>
 
-        <div className="bg-white p-10 rounded-3xl shadow-xl max-w-lg w-full border border-gray-100">
+        <div className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl max-w-lg w-full border border-gray-100">
           <div className="text-5xl mb-4">🎙️</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">Mikrofon Testi</h2>
           <p className="text-gray-500 mb-4">
@@ -531,7 +543,7 @@ export default function ExamInterface() {
         </div>
         <button
           onClick={() => { playTing(); startExamContent(); }}
-          className="bg-white text-blue-700 text-3xl font-extrabold py-6 px-20 rounded-full shadow-2xl hover:shadow-blue-400 hover:scale-105 active:scale-95 transition-all"
+          className="bg-white text-blue-700 text-2xl sm:text-3xl font-extrabold py-5 sm:py-6 px-10 sm:px-20 rounded-full shadow-2xl hover:shadow-blue-400 hover:scale-105 active:scale-95 transition-all"
         >
           ▶ Kirish
         </button>
@@ -618,15 +630,25 @@ export default function ExamInterface() {
   // ── EXAM (ANA SINAV EKRANI) ───────────────────────────────────────────────
   if (!currentItem) return null;
 
+  const currentQNum = questions.slice(0, currentQuestionIndex + 1).filter(q => q.type === 'question').length;
+  const totalQNum = questions.filter(q => q.type === 'question').length;
+
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
-      <header className="px-6 py-3 flex justify-between items-center border-b bg-white shadow-sm">
-        <h1 className="text-xl font-semibold text-gray-800">
-          Türk Dünyası | Konuşma Sınavı
+      {isOffline && (
+        <div className="bg-red-500 text-white text-center py-2 font-bold px-4 text-sm z-50 sticky top-0 shadow-md">
+          ⚠️ İnternet bağlantınız koptu! Lütfen bağlantınızı kontrol edin, sınavınız kesintiye uğrayabilir.
+        </div>
+      )}
+      <header className="px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center border-b bg-white shadow-sm">
+        <h1 className="text-sm sm:text-xl font-semibold text-gray-800 leading-tight">
+          <span className="hidden sm:inline">Türk Dünyası | </span>
+          <span className="sm:hidden">TD | </span>
+          Konuşma Sınavı
         </h1>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5">
-            <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5">
+            <svg className="w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
                 d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -634,16 +656,19 @@ export default function ExamInterface() {
               {formatTime(totalElapsed)}
             </span>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
             {/* Supabase veya Telegram'dan kimlik logosu */}
-            {sessionUser?.provider === 'google' && <span className="text-xl">🇬</span>}
-            {sessionUser?.provider === 'telegram' && <span className="text-xl">✈️</span>}
-            <p className="font-semibold text-gray-700">{sessionUser?.name}</p>
+            {sessionUser?.provider === 'google' && <span>🇬</span>}
+            {sessionUser?.provider === 'telegram' && <span>✈️</span>}
+            <p className="font-semibold text-gray-700 text-xs sm:text-base truncate max-w-[70px] sm:max-w-none">{sessionUser?.name}</p>
           </div>
+          <a href="/profile" target="_blank" rel="noopener noreferrer" className="ml-1 sm:ml-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">
+            Profilim
+          </a>
         </div>
       </header>
 
-      <div className="w-full py-5 flex justify-center items-center border-b bg-gray-50">
+      <div className="w-full py-2.5 sm:py-5 flex justify-center items-center border-b bg-gray-50">
         <div className="flex items-center">
           {[1, 2, 3].map((step, idx) => (
             <div key={idx} className="flex items-center">
@@ -659,7 +684,7 @@ export default function ExamInterface() {
         </div>
       </div>
 
-      <div className="flex flex-1 w-full max-w-7xl mx-auto p-4 gap-8">
+      <div className="flex flex-col lg:flex-row flex-1 w-full max-w-7xl mx-auto p-3 sm:p-4 gap-4 sm:gap-6">
         {currentItem.type === 'transition' ? (
           <div className="w-full flex flex-col items-center justify-center">
             <h1 className="text-6xl font-extrabold text-blue-800 mb-12 drop-shadow-sm">
@@ -675,10 +700,17 @@ export default function ExamInterface() {
         ) : (
           <>
             <div className="flex-1 flex flex-col min-w-0">
-              <div className="border border-blue-200 rounded-xl bg-white p-5 shadow-sm">
+              <div className="border border-blue-200 rounded-xl bg-white p-3 sm:p-5 shadow-sm">
                 <div className="flex justify-between items-center border-b pb-3 mb-4">
-                  <span className="font-bold text-gray-800">{currentItem.section}</span>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-gray-800 text-sm sm:text-base">{currentItem.section}</span>
+                    {currentItem.type === 'question' && (
+                      <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-md">
+                        Soru {currentQNum}/{totalQNum}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <button onClick={() => setFontSizeRatio(p => Math.max(0.7, p - 0.1))}
                       className="border px-4 py-1 rounded-lg text-gray-600 font-bold hover:bg-gray-100 text-sm transition">
                       A-
@@ -751,8 +783,8 @@ export default function ExamInterface() {
               </div>
             </div>
 
-            <div className="w-[420px] flex flex-col pt-1">
-              <div className="border border-gray-200 rounded-xl shadow-sm bg-white p-6 flex flex-col items-center gap-4 h-72">
+            <div className="w-full lg:w-[420px] flex flex-col pt-1">
+              <div className="border border-gray-200 rounded-xl shadow-sm bg-white p-4 sm:p-6 flex flex-col items-center gap-3 sm:gap-4">
                 {phase === 'prep' ? (
                   <div className="flex flex-col items-center">
                     <p className="text-yellow-600 font-bold text-sm mb-3 uppercase tracking-wide">Hazırlık Süresi</p>
@@ -784,8 +816,8 @@ export default function ExamInterface() {
                     <div className="w-4 h-4 bg-red-500 rounded-full animate-pulse" />
                   </div>
                 )}
-                <div className="w-full bg-[#FCF8FB] flex-1 border-t border-b border-gray-100 flex items-center justify-center px-2">
-                  <canvas ref={canvasRef} width={380} height={90} className="w-full h-full" />
+                <div className="w-full bg-[#FCF8FB] h-16 sm:h-20 border-t border-b border-gray-100 flex items-center justify-center px-2">
+                  <canvas ref={canvasRef} width={380} height={80} className="w-full h-full" />
                 </div>
               </div>
             </div>
@@ -793,23 +825,7 @@ export default function ExamInterface() {
         )}
       </div>
 
-      {/* 🛠 MENTOR TEST PANELİ (CANLIYA ÇIKMADAN ÖNCE BURAYI KOMPLE SİL!) */}
-      {appState === 'EXAM' && (
-        <div className="fixed bottom-4 right-4 bg-red-600 p-3 rounded-xl shadow-2xl z-50 border-4 border-black opacity-80 hover:opacity-100 transition-opacity">
-          <p className="text-white font-bold text-xs mb-2 uppercase text-center tracking-widest">🛠 Test Paneli</p>
-          <div className="flex gap-2">
-            <button onClick={handleTestPrev} className="bg-white text-red-600 px-3 py-2 rounded-lg font-bold hover:bg-gray-200 text-sm">
-              ⏮ Önceki
-            </button>
-            <button onClick={handleTestStopRecording} className="bg-black text-white px-3 py-2 rounded-lg font-bold hover:bg-gray-800 text-sm">
-              ⏹ Kaydı Kes
-            </button>
-            <button onClick={handleTestNext} className="bg-white text-red-600 px-3 py-2 rounded-lg font-bold hover:bg-gray-200 text-sm">
-              Sonraki ⏭
-            </button>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );

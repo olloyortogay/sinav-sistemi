@@ -11,7 +11,7 @@ function getSupabase() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userName, userEmail, variantNo, totalTime } = body;
+    const { userName, userEmail, telegramAuthId, variantNo, totalTime } = body;
 
     const supabase = getSupabase();
     if (!supabase) {
@@ -24,6 +24,7 @@ export async function POST(request) {
       .insert([{
         user_name:    userName  || 'Bilinmeyen',
         user_email:   userEmail || null,
+        telegram_chat_id: telegramAuthId ? String(telegramAuthId) : null,
         variant_no:   variantNo || 'random',
         total_time:   totalTime || 0,
         completed_at: new Date().toISOString(),
