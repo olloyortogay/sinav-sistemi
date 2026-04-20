@@ -21,15 +21,27 @@ export async function POST(request) {
     const replyTo = message.reply_to_message;
     if (!replyTo) return NextResponse.json({ ok: true });
 
-    // Yanıtlanan mesajda "Öğrenci Adı:" ifadesini ara (Ting veya metin formunda)
-    const targetText = replyTo.caption || replyTo.text || "";
-    const nameMatch = targetText.match(/Öğrenci Adı:\s*([^\n\r]+)/i);
+    // 1) Telefondan veya PC'den albümdeki sese reply yapıldığında
+    //    Eğer yanıtlanan mesaj bir "audio" ise, "performer" içinde öğrenci adı vardır!
+    let studentName = null;
+    if (replyTo.audio && replyTo.audio.performer) {
+      studentName = replyTo.audio.performer.trim();
+    } else {
+      // 2) Eğer caption'a metin reply edilmişse (eski sistem fallback)
+      const targetText = replyTo.caption || replyTo.text || "";
+      const nameMatch = targetText.match(/Öğrenci Adı:\s*([^\n\r]+)/i);
+      if (nameMatch) {
+         studentName = nameMatch[1].trim();
+      }
+    }
     
-    if (!nameMatch) return NextResponse.json({ ok: true });
-    
-    const studentName = nameMatch[1].trim();
+    // Mesaj testini geç: Sadece sayı da girilmiş olabilir
     const scoreText = message.text.trim();
     const score = parseInt(scoreText, 10);
+    
+    if (!studentName || isNaN(score)) {
+       return NextResponse.json({ ok: true, reason: 'No student name or NaN score' });
+    }
     
     if (isNaN(score)) {
        return NextResponse.json({ ok: true, reason: 'NaN score' });
@@ -82,7 +94,7 @@ export async function POST(request) {
       }).catch(e => console.log("Webhook Email Err:", e));
     }
 
-    // Admin'e işlemi onaylayan yanıt dön (Mesajına geri reply)
+    // Puan başarıyla verildiğinde admine Geri Dönüş
     if (message.chat.id) {
       const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
@@ -90,7 +102,7 @@ export async function POST(request) {
          headers: { 'Content-Type': 'application/json' },
          body: JSON.stringify({ 
              chat_id: message.chat.id, 
-             text: `✅ ${studentName} adlı öğrenciye ${score} puan işlendi ve bildirimleri (Mail/TG) yollandı!`, 
+             text: `Puan başarıyla verildi! (${studentName}: ${score}) 🏆`, 
              reply_to_message_id: message.message_id 
          })
        });
