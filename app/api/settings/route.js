@@ -1,38 +1,40 @@
 import { NextResponse } from 'next/server';
-import { Redis } from '@upstash/redis';
+import { createClient } from '@supabase/supabase-js';
 
-// Vercel KV (Upstash) entegrasyonu - birden fazla env var adını destekle
-function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  return new Redis({ url, token });
+function getSupabase() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
 }
 
-// Local memory fallback (Redis yoksa veya bağlanamazsa)
-let localStore = { activeVariant: 'random', adminUsername: 'admin', adminPassword: 'admin' };
+const defaultStore = { activeVariant: 'random', adminUsername: 'admin', adminPassword: 'admin', adminSessions: [] };
 
+// Supabase'den ayarları oku
 async function readStore() {
-  const redis = getRedis();
-  if (redis) {
+  const supabase = getSupabase();
+  if (supabase) {
     try {
-      const data = await redis.get('exam_settings');
-      if (data) return typeof data === 'string' ? JSON.parse(data) : data;
-    } catch (e) {
-      console.warn('Redis read error, using local store:', e.message);
-    }
+      const { data, error } = await supabase.from('app_settings').select('data').eq('id', 1).single();
+      if (!error && data && data.data) {
+        return { ...defaultStore, ...data.data };
+      }
+    } catch (e) { console.warn('Supabase read error:', e.message); }
   }
-  return localStore;
+  return defaultStore;
 }
 
+// Supabase'e ayarları yaz (Upsert)
 async function writeStore(updates) {
-  localStore = { ...localStore, ...updates };
-  const redis = getRedis();
-  if (redis) {
+  const supabase = getSupabase();
+  const current = await readStore();
+  const nextStore = { ...current, ...updates };
+
+  if (supabase) {
     try {
-      await redis.set('exam_settings', JSON.stringify(localStore));
+      await supabase.from('app_settings').upsert([{ id: 1, data: nextStore }]);
     } catch (e) {
-      console.warn('Redis write error:', e.message);
+      console.warn('Supabase write error:', e.message);
     }
   }
 }

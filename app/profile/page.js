@@ -114,7 +114,7 @@ export default function ProfilePage() {
             <div className="bg-yellow-50 border border-yellow-200 p-4 sm:p-6 rounded-xl">
               <h3 className="font-bold text-yellow-800 mb-2">Telegram Hesabınızı Bağlayın</h3>
               <p className="text-yellow-700 text-sm mb-4">Sınav puanlarınızı görebilmek ve sistemden otomatik bildirim alabilmek için Telegram hesabınızı bağlamanız zorunludur.</p>
-              <TelegramLoginWidget onAuth={handleTelegramAuth} />
+              <TelegramLoginWidget botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME} onAuth={handleTelegramAuth} />
             </div>
           )}
 

@@ -23,27 +23,163 @@ export const examBank = {
   // 1.2. BÖLÜM Senaryoları (B1+ – Fotoğraf yorumlama, 3 alt sorudan oluşur)
   part1_2: [
     {
-      image_url: "/images/pc_vs_laptop_1776520194335.png",
+      image_url: "/variants/1.png",
       questions: [
-        { q: "Fotoğraflarda neler görüyorsunuz?" },
-        { q: "Hangi bilgisayar daha iyi, masaüstü mü yoksa dizüstü mü?" },
-        { q: "İnsanlar son zamanlarda neden dizüstü bilgisayarı tercih ediyorlar?" },
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "\"İyi ki okudum\" dediğiniz bir kitap var mı?" },
+        { q: "Ailenizde daha çok kitap mı okunur, yoksa teknolojik aletler mi kullanılır?" },
       ],
     },
     {
-      image_url: "/images/fast_vs_healthy_1776523969107.png",
+      image_url: "/variants/2.png",
       questions: [
-        { q: "Fotoğraflarda neler görüyorsunuz?" },
-        { q: "Sizce hangisi insan sağlığı için daha faydalıdır ve neden?" },
-        { q: "İnsanlar zararlı olduğunu bilmelerine rağmen neden fast food tercih ediyorlar?" },
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Sabah insanı mısınız, yoksa gece mi daha verimli çalışırsınız?" },
+        { q: "Günün hangi zaman dilimi daha yaratıcı bir çalışma ortamı sunar?" },
       ],
     },
     {
-      image_url: "/images/park_scene_1776522321900.png",
+      image_url: "/variants/3.png",
       questions: [
-        { q: "Fotoğraflarda neler görüyorsunuz?" },
-        { q: "Şehir hayatında yeşil alanların ve parkların olması neden önemlidir?" },
-        { q: "Siz dinlenmek için kalabalık mekânları mı yeşil alanları mı tercih edersiniz?" },
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Arkadaşlarla ders çalışmanın avantajları nelerdir?" },
+        { q: "Yalnız mı ders çalışmayı tercih edersiniz, yoksa arkadaşlarınızla mı?" },
+      ],
+    },
+    {
+      image_url: "/variants/4.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Organik gıda ile işlenmiş gıda tüketiminin farkları nelerdir?" },
+        { q: "Hangi tür gıdaları tercih edersiniz? Neden?" },
+      ],
+    },
+    {
+      image_url: "/variants/5.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Yalnız seyahat etmek grup halinde seyahat etmeye göre üstünlük sağlar mı?" },
+        { q: "Grup halinde seyahat etmek neden bazıları için daha eğlenceli olabilir?" },
+      ],
+    },
+    {
+      image_url: "/variants/6.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Evcil hayvan sahibi olmanın avantajları ve zorlukları nelerdir?" },
+        { q: "Neden bazı insanlar evcil hayvan beslemeyi sevmezler?" },
+      ],
+    },
+    {
+      image_url: "/variants/7.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Boş zamanlarınızda arkadaşlarınızla şarkı söylemek için bir yerlere gider misiniz?" },
+        { q: "Yalnızken şarkı söylemenin size ne tür faydaları olur?" },
+      ],
+    },
+    {
+      image_url: "/variants/8.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Takım sporları ile bireysel sporlar arasındaki temel farklar nelerdir?" },
+        { q: "Hangi tür sporu yapmaktan hoşlanırsınız?" },
+      ],
+    },
+    {
+      image_url: "/variants/9.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Hangi cihazı daha çok kullanıyorsunuz: dizüstü bilgisayar mı masaüstü mü?" },
+        { q: "Dizüstü bilgisayarın avantajları nelerdir?" },
+      ],
+    },
+    {
+      image_url: "/variants/10.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Güneşli havayı mı, yağmurlu havayı mı tercih edersiniz? Neden?" },
+        { q: "Yağmurlu hava size ne hissettiriyor?" },
+      ],
+    },
+    {
+      image_url: "/variants/11.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Çayın, kahveye göre üstünlükleri nelerdir?" },
+        { q: "Kahvenin size ne tür zararları olabilir?" },
+      ],
+    },
+    {
+      image_url: "/variants/12.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Nasıl bir ailede büyüdünüz? Büyük ailede mi, çekirdek ailede mi?" },
+        { q: "Sizce hangi aile yapısı insanlar için daha faydalıdır?" },
+      ],
+    },
+    {
+      image_url: "/variants/13.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Gençlerin hangi özelliklerini beğenirsiniz?" },
+        { q: "Yaşlılara saygı göstermek neden önemlidir?" },
+      ],
+    },
+    {
+      image_url: "/variants/14.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Hastalandığınızda doğal bitkileri mi, ilaçları mı tercih ediyorsunuz?" },
+        { q: "Doğal bitkilerle tedavi yöntemlerinin avantajları nelerdir?" },
+      ],
+    },
+    {
+      image_url: "/variants/15.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Savaş ile barış arasındaki farklar nelerdir?" },
+        { q: "İnsanlar için barış neden gereklidir?" },
+      ],
+    },
+    {
+      image_url: "/variants/16.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Otobüsün, taksiye göre avantajları nelerdir?" },
+        { q: "Neden bazı insanlar taksiyle yolculuk yapmayı tercih ediyor?" },
+      ],
+    },
+    {
+      image_url: "/variants/17.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Sizce sıcak havanın ne tür olumsuz yönleri vardır?" },
+        { q: "Hava soğuk olduğunda dışarı çıkmak ister misiniz?" },
+      ],
+    },
+    {
+      image_url: "/variants/18.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Siz hangisini tercih edersiniz: eski model arabalar mı yoksa yeni model arabalar mı?" },
+        { q: "Sizce aradan yıllar geçmesine rağmen eski model arabalar neden hâlâ değerli ve pahalı?" },
+      ],
+    },
+    {
+      image_url: "/variants/19.png",
+      questions: [
+        { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Akıllı saati mi yoksa geleneksel saati mi tercih ediyorsunuz?" },
+        { q: "Sizce hangi saat daha kullanışlıdır: akıllı saat mi, geleneksel saat mi?" },
+      ],
+    },
+    {
+      image_url: "/variants/20.png",
+      questions: [
+        { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
+        { q: "Yüz yüze eğitimde beğenmediğiniz yönler nelerdir?" },
+        { q: "Hiç uzaktan eğitim aldınız mı?" },
       ],
     },
   ],

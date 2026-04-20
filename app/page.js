@@ -160,6 +160,18 @@ export default function ExamInterface() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, phase, appState, currentItem]);
 
+  // ── Auto Advance for Transition ────────────────────────────────────────────
+  useEffect(() => {
+    if (appState !== 'EXAM' || !currentItem) return;
+    if (currentItem.type === 'transition' || currentItem.type === 'video' || currentItem.type === 'audio_listen') {
+      const timer = setTimeout(() => {
+        goToNextItem();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appState, currentQuestionIndex]);
+
   // ── Sayfa Yenileme & Offline Koruması ──────────────────────────────────────
   useEffect(() => {
     const setOff = () => setIsOffline(true);
@@ -318,6 +330,7 @@ export default function ExamInterface() {
       if (next.type === 'question') {
         setPhase('prep');
         setTimeLeft(next.prepTime);
+        playTing();
       }
     } else {
       finishAndUploadExam();
@@ -330,6 +343,7 @@ export default function ExamInterface() {
     if (first?.type === 'question') {
       setPhase('prep');
       setTimeLeft(first.prepTime);
+      playTing();
     }
     setTotalElapsed(0);
     totalTimerRef.current = setInterval(() => setTotalElapsed(p => p + 1), 1000);
@@ -657,9 +671,19 @@ export default function ExamInterface() {
             </span>
           </div>
           <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
-            {/* Supabase veya Telegram'dan kimlik logosu */}
-            {sessionUser?.provider === 'google' && <span>🇬</span>}
-            {sessionUser?.provider === 'telegram' && <span>✈️</span>}
+            {/* Avatar veya Provider Logosu */}
+            {sessionUser?.rawData?.user_metadata?.avatar_url || sessionUser?.rawData?.photo_url ? (
+              <img 
+                src={sessionUser.rawData.user_metadata?.avatar_url || sessionUser.rawData.photo_url} 
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-200" 
+                alt="Avatar" 
+              />
+            ) : (
+              <>
+                {sessionUser?.provider === 'google' && <span>🇬</span>}
+                {sessionUser?.provider === 'telegram' && <span>✈️</span>}
+              </>
+            )}
             <p className="font-semibold text-gray-700 text-xs sm:text-base truncate max-w-[70px] sm:max-w-none">{sessionUser?.name}</p>
           </div>
           <a href="/profile" target="_blank" rel="noopener noreferrer" className="ml-1 sm:ml-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">

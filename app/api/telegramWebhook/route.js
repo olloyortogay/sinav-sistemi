@@ -21,9 +21,9 @@ export async function POST(request) {
     const replyTo = message.reply_to_message;
     if (!replyTo) return NextResponse.json({ ok: true });
 
-    // Yanıtlanan mesajda "📌 Öğrenci Adı:" ifadesini ara
+    // Yanıtlanan mesajda "Öğrenci Adı:" ifadesini ara (Ting veya metin formunda)
     const targetText = replyTo.caption || replyTo.text || "";
-    const nameMatch = targetText.match(/📌 Öğrenci Adı:\s*(.*)/);
+    const nameMatch = targetText.match(/Öğrenci Adı:\s*([^\n\r]+)/i);
     
     if (!nameMatch) return NextResponse.json({ ok: true });
     
