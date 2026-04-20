@@ -22,6 +22,16 @@ export default function ExamInterface() {
   const [uploadError, setUploadError] = useState(null);
   const [activeVariant, setActiveVariant] = useState('random');
   const [isOffline, setIsOffline] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // ── Dark Mode Katmanı ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('app-dark-mode');
+    } else {
+      document.documentElement.classList.remove('app-dark-mode');
+    }
+  }, [isDarkMode]);
 
   // ── Refs ───────────────────────────────────────────────────────────────────
   const mediaRecorderRef = useRef(null);
@@ -137,8 +147,8 @@ export default function ExamInterface() {
   const activeSection = (() => {
     if (!currentItem) return 1;
     const s = currentItem.section || currentItem.title || '';
-    if (s.includes('3.')) return 3;
-    if (s.includes('2.')) return 2;
+    if (s.startsWith('3.')) return 3;
+    if (s.startsWith('2.')) return 2;
     return 1;
   })();
 
@@ -654,7 +664,7 @@ export default function ExamInterface() {
           ⚠️ İnternet bağlantınız koptu! Lütfen bağlantınızı kontrol edin, sınavınız kesintiye uğrayabilir.
         </div>
       )}
-      <header className="px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center border-b bg-white shadow-sm">
+      <header className="px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center border-b bg-white shadow-sm preserve-color">
         <h1 className="text-sm sm:text-xl font-semibold text-gray-800 leading-tight">
           <span className="hidden sm:inline">Türk Dünyası | </span>
           <span className="sm:hidden">TD | </span>
@@ -686,6 +696,9 @@ export default function ExamInterface() {
             )}
             <p className="font-semibold text-gray-700 text-xs sm:text-base truncate max-w-[70px] sm:max-w-none">{sessionUser?.name}</p>
           </div>
+          <button onClick={() => setIsDarkMode(!isDarkMode)} className="ml-1 sm:ml-2 p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors" title="Karanlık / Aydınlık Tema">
+             {isDarkMode ? '☀️' : '🌙'}
+          </button>
           <a href="/profile" target="_blank" rel="noopener noreferrer" className="ml-1 sm:ml-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">
             Profilim
           </a>
@@ -743,8 +756,16 @@ export default function ExamInterface() {
                       className="border-2 border-blue-400 px-4 py-1 rounded-lg text-blue-500 font-bold hover:bg-blue-50 text-sm transition">
                       A+
                     </button>
-                    {currentItem.hasAudioBtn !== false && phase === 'prep' && (
-                      <button onClick={() => speakText(currentItem.question || '')}
+                    {phase === 'prep' && (
+                      <button onClick={() => {
+                        let text = currentItem.question || '';
+                        if (currentItem.bullets) text += ' ' + currentItem.bullets.join('. ');
+                        if (currentItem.lists) {
+                           if (currentItem.lists.lehine) text += ' Lehine durumlar. ' + currentItem.lists.lehine.join('. ');
+                           if (currentItem.lists.aleyhine) text += ' Aleyhine durumlar. ' + currentItem.lists.aleyhine.join('. ');
+                        }
+                        speakText(text.trim());
+                      }}
                         className="text-blue-500 hover:text-blue-700 transition" title="Soruyu Dinle">
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
