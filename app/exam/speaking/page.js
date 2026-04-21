@@ -104,21 +104,28 @@ export default function ExamInterface() {
 
   // Giriş akışı kontrolü: zaten giriş yapılmışsa MIC_CHECK, yeni giriş yapıldıysa dashboard
   useEffect(() => {
-    if (sessionUser && appState === 'LOGIN') {
-      if (isPreloadedAuthRef.current) {
-        // Kullanıcı zaten giriş yapmış ve sınavı başlatmak için sayfaya geldi
-        setAppState('MIC_CHECK');
+    if (!sessionUser || appState !== 'LOGIN') return;
+
+    const notifyKey = `notified_login_v2_${sessionUser.id}`;
+    const alreadyNotified = localStorage.getItem(notifyKey);
+
+    if (isPreloadedAuthRef.current) {
+      // Kullanıcı zaten giriş yapmış, sınavı başlatmak için sayfaya geldi → MIC_CHECK'e geç
+      setAppState('MIC_CHECK');
+    } else {
+      // Kullanıcı az önce giriş yaptı → bildirim gönder, sonra dashboard'a yönlendir
+      if (!alreadyNotified) {
+        localStorage.setItem(notifyKey, 'true');
+        fetch('/api/notifyLogin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: sessionUser, provider: sessionUser.provider })
+        })
+          .catch(() => {})
+          .finally(() => {
+            window.location.href = '/';
+          });
       } else {
-        // Kullanıcı az önce giriş yaptı → dashboard'a yönlendir
-        const notifyKey = `notified_login_v2_${sessionUser.id}`;
-        if (!localStorage.getItem(notifyKey)) {
-          fetch('/api/notifyLogin', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user: sessionUser, provider: sessionUser.provider })
-          }).catch(()=>{});
-          localStorage.setItem(notifyKey, 'true');
-        }
         window.location.href = '/';
       }
     }
