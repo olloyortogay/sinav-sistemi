@@ -127,12 +127,24 @@ export async function POST(request) {
 
     // Öğrenci adını audio performer'dan veya caption'dan al
     let studentName = null;
+    let captionEmail = null;
+
     if (replyTo.audio?.performer) {
       studentName = replyTo.audio.performer.trim();
     } else {
       const targetText = replyTo.caption || replyTo.text || '';
       const nameMatch = targetText.match(/(?:Öğrenci Adı|Ism):\s*([^\n\r]+)/i);
       if (nameMatch) studentName = nameMatch[1].trim();
+      
+      // E-postayı mesajdan (caption) kurtarmaya çalışalım (db'de boş olma ihtimaline karşı)
+      const emailMatch = targetText.match(/(?:E-posta|Email):\s*([^\n\r]+)/i);
+      if (emailMatch) captionEmail = emailMatch[1].trim().replace(/\\/g, ''); 
+    }
+
+    // Eğer audio performer varsa, caption'u yine de asıl mesajdan kontrol edelim (aynı mesajın caption'ı)
+    if (!captionEmail && replyTo.caption) {
+       const emMatch = replyTo.caption.match(/(?:E-posta|Email):\s*([^\n\r]+)/i);
+       if (emMatch) captionEmail = emMatch[1].trim().replace(/\\/g, ''); 
     }
     
     const scoreText = message.text.trim();
@@ -197,19 +209,26 @@ export async function POST(request) {
       }).catch(e => console.log('TG student notify err:', e.message));
     }
 
-    // E-posta doğrudan Resend ile gönder
-    if (targetExam.user_email) {
+    // E-posta doğrudan Resend ile gönder (db'de yoksa ama mesajda varsa oradan al)
+    const emailToSend = targetExam.user_email || captionEmail;
+    
+    if (emailToSend) {
       await sendEmailViaResend({
         userName: targetExam.user_name,
-        userEmail: targetExam.user_email,
+        userEmail: emailToSend,
         totalTime: targetExam.total_time,
         score
       });
+      
+      // Eğer DB'de yoktuysa ama caption'da bulduysak, eksik veriyi DB'de onar
+      if (!targetExam.user_email) {
+        await supabase.from('exam_results').update({ user_email: emailToSend }).eq('id', targetExam.id);
+      }
     }
 
     // Admin'e onay mesajı
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-    const foundEmail = targetExam.user_email ? `✉️ ${targetExam.user_email}` : '(email yok)';
+    const foundEmail = emailToSend ? `✉️ ${emailToSend}` : '(email yok)';
     await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
