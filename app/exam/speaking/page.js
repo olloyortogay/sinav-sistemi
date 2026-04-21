@@ -103,6 +103,17 @@ export default function ExamInterface() {
   // Eğer session User varsa ve LOGIN ekranındaysak, otomatik olarak MIC_CHECK'e geçebiliriz.
   useEffect(() => {
     if (sessionUser && appState === 'LOGIN') {
+      // Giriş bildirimi gönder
+      const notifyKey = `notified_login_v2_${sessionUser.id}`;
+      if (!localStorage.getItem(notifyKey)) {
+        fetch('/api/notifyLogin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: sessionUser, provider: sessionUser.provider })
+        }).catch(()=>{});
+        localStorage.setItem(notifyKey, 'true');
+      }
+      
       setAppState('MIC_CHECK');
     }
   }, [sessionUser, appState]);
@@ -133,6 +144,14 @@ export default function ExamInterface() {
     setSessionUser(userObj);
     // Sayfa yenilenmesine karşı tarayıcıya kaydet
     localStorage.setItem('tg_session', JSON.stringify(userObj));
+    
+    // Arkada bildirim at
+    fetch('/api/notifyLogin', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user: userObj, provider: 'telegram' })
+    }).catch(()=>{});
+
     window.location.href = '/';
   };
 
