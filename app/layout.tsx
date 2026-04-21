@@ -13,16 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Türk Dünyası | Konuşma Sınavı",
+  title: "Turk dunyosi | Imtihon markazi",
   description: "Türk dili konuşma becerilerini ölçen profesyonel sınav platformu",
   keywords: ["Türkçe sınav", "konuşma sınavı", "Türk Dünyası", "dil sınavı"],
-  icons: {
-    icon: [
-      { url: '/images/logo.webp', type: 'image/webp' },
-    ],
-    apple: '/images/logo.webp',
-    shortcut: '/images/logo.webp',
-  },
 };
 
 import Providers from "../components/Providers";
