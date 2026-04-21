@@ -132,7 +132,18 @@ export default function ProfilePage() {
             <div className="bg-yellow-50 border border-yellow-200 p-4 sm:p-6 rounded-xl">
               <h3 className="font-bold text-yellow-800 mb-2">{t('profLinkTgTitle')}</h3>
               <p className="text-yellow-700 text-sm mb-4">{t('profLinkTgDesc')}</p>
-              <TelegramLoginWidget botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME} onAuth={handleTelegramAuth} />
+              <a 
+                href={`https://t.me/turkdunyasisinavbot?start=${sessionUser.email || sessionUser.id}`}
+                target="_blank"
+                onClick={() => {
+                  alert('Telegram ochilgach, START tugmasini bosing! / Telegram açıldığında START tuşuna basın!');
+                  setHasTelegramLinked(true);
+                }}
+                className="inline-flex items-center gap-2 bg-[#2AABEE] hover:bg-[#229ED9] text-white font-bold py-2.5 px-5 rounded-xl transition shadow-md"
+              >
+                <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.11.03-1.84 1.18-5.2 3.45-.49.34-.94.51-1.34.5-.44-.01-1.28-.24-1.9-.45-.77-.25-1.38-.38-1.33-.8.02-.22.33-.45.92-.69 3.61-1.57 6.02-2.61 7.23-3.1 3.44-1.42 4.15-1.68 4.62-1.69.1 0 .33.02.46.12.11.08.13.19.14.28z"/></svg>
+                {t('profLinkBtn')}
+              </a>
             </div>
           )}
 
@@ -170,7 +181,7 @@ export default function ProfilePage() {
                     <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mt-2 !mb-6 shadow-sm">
                       <div className="flex items-center gap-2 font-bold text-blue-800 mb-2 border-b border-blue-200 pb-2">
                         <span className="text-xl">🤖</span> 
-                        AI Analizi (Yapay Zeka Değerlendirmesi)
+                        {t('aiAnalysis')}
                       </div>
                       <div className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line">
                         {r.sections.ai_feedback}

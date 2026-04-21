@@ -78,7 +78,7 @@ ${fullTranscription}`;
     });
 
     const completionData = await completionRes.json();
-    const aiFeedback = completionData.choices?.[0]?.message?.content || "Analiz yapılamadı.";
+    const aiFeedback = completionData.choices?.[0]?.message?.content || ("Analiz jarayonida xatolik: " + (completionData.error?.message || "xato (limit tugagan bo'lishi mumkin)"));
 
     // 3. Save to Supabase exam_results exactly into the 'ai_feedback' column if it exists,
     // otherwise we save it as ai_feedback inside 'sections' JSONB to be safe from Schema errors.

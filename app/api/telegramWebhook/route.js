@@ -19,6 +19,36 @@ export async function POST(request) {
 
     // Hedef mesajın bir "reply" (yanıt) olduğundan emin ol
     const replyTo = message.reply_to_message;
+
+    // EĞER KULLANICI PROFİLDEN "/start <user_id>" İLE GELDİYSE HESABI BAĞLA
+    if (message.text && message.text.startsWith('/start ')) {
+      const parts = message.text.split(' ');
+      if (parts.length > 1) {
+        const userIdOrEmail = parts[1].trim();
+        const supabase = getSupabase();
+        if (supabase) {
+          // Öğrencinin girmiş olduğu ve telegram_chat_id'si boş olan kayıtlarına telegram ID ekleyelim
+          // Profil sayfası userId veya email'e göre çalışabilir. Biz userEmail veya userID üzerinden güncelleme yapmalıyız.
+          // Güvenlik ve basitlik açısından son 1 günde oluşturulmuş kayıtlarını da bağlayabiliriz.
+          await supabase.from('exam_results')
+            .update({ telegram_chat_id: String(message.chat.id) })
+            .or(`user_email.eq.${userIdOrEmail},id.eq.${userIdOrEmail}`)
+            
+          const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              chat_id: message.chat.id, 
+              text: `✅ *Telegram hisobingiz muvaffaqiyatli ulandi!*\n\nSizning sinov natijalaringiz va xabarnomalar endi shu bot orqali yuboriladi. / Telegram hesabınız başarıyla bağlandı! Sonuçlarınız buradan iletilecektir.`, 
+              parse_mode: 'Markdown' 
+            })
+          });
+          return NextResponse.json({ ok: true, reason: 'Account linked' });
+        }
+      }
+    }
+
     if (!replyTo) return NextResponse.json({ ok: true });
 
     // 1) Telefondan veya PC'den albümdeki sese reply yapıldığında
