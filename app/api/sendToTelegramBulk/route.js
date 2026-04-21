@@ -9,7 +9,8 @@ export async function POST(request) {
     // Markdown özel karakterlerini escape et
     const escMd = (str) => String(str).replace(/[*_`[\]()~>#+=|{}.!-]/g, '\\$&');
 
-    const safeName = escMd(userInfo?.name || studentName || 'Bilinmeyen_Ogrenci');
+    const rawName = userInfo?.name || studentName || 'Bilinmeyen_Ogrenci';
+    const safeName = escMd(rawName);
     const emailInfo = userInfo?.email ? `\n✉️ E-posta: ${escMd(userInfo.email)}` : '';
     const tgInfo = userInfo?.telegramUsername ? `\n✈️ Telegram: ${escMd(userInfo.telegramUsername)}` : '';
     const timeInfo = userInfo?.timeTaken ? `\n⏱️ Süre: ${Math.floor(userInfo.timeTaken / 60)} dk ${userInfo.timeTaken % 60} sn` : '';
@@ -35,7 +36,7 @@ export async function POST(request) {
         caption: index === 0 ? captionText : '',
         parse_mode: 'Markdown',
         title: item.sectionName,
-        performer: safeName
+        performer: rawName
       };
     });
 

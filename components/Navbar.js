@@ -2,9 +2,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabase';
+import { useLanguage } from '../lib/LanguageContext';
 
 export default function Navbar() {
   const [user, setUser] = useState(null);
+  const { lang, changeLanguage, t } = useLanguage();
 
   useEffect(() => {
     // Check initial session
@@ -57,7 +59,16 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center gap-4">
-            <Link href="/" className="text-gray-600 hover:text-blue-600 font-medium text-sm transition">Ana Sayfa</Link>
+            <button 
+              onClick={() => changeLanguage(lang === 'uz' ? 'tr' : 'uz')}
+              className="flex items-center justify-center w-9 h-9 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm transition"
+              title="Dili Değiştir / Tilni O'zgartirish"
+            >
+              {lang.toUpperCase()}
+            </button>
+            <Link href="/" className="text-gray-600 hover:text-blue-600 font-medium text-sm transition">
+              {t('navHome')}
+            </Link>
             
             {user ? (
               <div className="flex items-center gap-3">
@@ -79,7 +90,7 @@ export default function Navbar() {
               </div>
             ) : (
               <Link href="/exam/speaking" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-bold transition shadow-md shadow-blue-100">
-                Giriş Yap
+                {t('login')}
               </Link>
             )}
           </div>

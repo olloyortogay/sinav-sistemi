@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateExam } from '../../data/questions';
 import { supabase } from '../../../lib/supabase';
 import TelegramLoginWidget from '../../../components/TelegramLoginWidget';
+import { useLanguage } from '../../../lib/LanguageContext';
 
 export default function ExamInterface() {
   // ── App State Machine ──────────────────────────────────────────────────────
@@ -11,6 +12,7 @@ export default function ExamInterface() {
 
   // User Session Handling
   const [sessionUser, setSessionUser] = useState(null); // { id, name, email, provider, rawData }
+  const { t } = useLanguage();
 
   // ── Exam State ─────────────────────────────────────────────────────────────
   const [questions, setQuestions] = useState([]);
@@ -131,7 +133,7 @@ export default function ExamInterface() {
     setSessionUser(userObj);
     // Sayfa yenilenmesine karşı tarayıcıya kaydet
     localStorage.setItem('tg_session', JSON.stringify(userObj));
-    setAppState('MIC_CHECK');
+    window.location.href = '/';
   };
 
   const handleLogout = async () => {
@@ -493,9 +495,9 @@ export default function ExamInterface() {
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/images/logo.webp" alt="Türk Dünyası" className="w-24 h-24 object-contain" />
             </div>
-            <h1 className="text-3xl font-extrabold text-gray-800 mb-1">Türk Dünyası</h1>
-            <p className="text-blue-600 font-semibold">Konuşma Sınavı</p>
-            <p className="text-sm text-gray-400 mt-1">Sınava başlamak için lütfen giriş yapın</p>
+            <h1 className="text-3xl font-extrabold text-gray-800 mb-1">{t('loginHeader1')}</h1>
+            <p className="text-blue-600 font-semibold">{t('loginHeader2')}</p>
+            <p className="text-sm text-gray-400 mt-1">{t('loginHeader3')}</p>
           </div>
 
           {/* Auth Options */}
@@ -512,12 +514,12 @@ export default function ExamInterface() {
                 <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                 <path fill="none" d="M1 1h22v22H1z" />
               </svg>
-              Google ile Devam Et
+              {t('loginGoogle')}
             </button>
 
             <div className="w-full flex items-center gap-3 my-4 opacity-70">
               <div className="h-px bg-gray-300 flex-1"></div>
-              <span className="text-gray-400 text-sm font-semibold uppercase">YADA</span>
+              <span className="text-gray-400 text-sm font-semibold uppercase">{t('loginOr')}</span>
               <div className="h-px bg-gray-300 flex-1"></div>
             </div>
 
@@ -528,7 +530,7 @@ export default function ExamInterface() {
             />
 
             <p className="text-xs text-gray-400 mt-4 text-center px-4">
-              Güvenliğiniz için giriş yapmanız istenmektedir. Çözümleriniz profilinizde saklanacaktır.
+              {t('loginDisclaimer')}
             </p>
           </div>
         </div>
@@ -542,22 +544,22 @@ export default function ExamInterface() {
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 sm:p-6 text-center relative">
         {/* Hızlı Çıkış (Logout) */}
         <button onClick={handleLogout} className="absolute top-4 right-4 sm:top-6 sm:right-6 text-gray-500 hover:text-red-500 font-medium transition text-sm sm:text-base">
-          Çıkış Yap
+          {t('logout')}
         </button>
 
         <div className="bg-white p-6 sm:p-10 rounded-3xl shadow-xl max-w-lg w-full border border-gray-100">
           <div className="text-5xl mb-4">🎙️</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Mikrofon Testi</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('micCheckTitle')}</h2>
           <p className="text-gray-500 mb-4">
-            Hoş geldiniz, <strong>{sessionUser?.name}</strong>!<br />
-            Sınava başlamadan önce mikrofonunuzun çalıştığını doğrulayın.
+            {t('micCheckWelcome')}, <strong>{sessionUser?.name}</strong>!<br />
+            {t('micCheckDesc')}
           </p>
           <div className="space-y-3 mt-8">
             <button onClick={testMicrophone} className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-md shadow-yellow-200">
-              🔍 Mikrofonu Test Et
+              {t('btnMicTest')}
             </button>
             <button onClick={() => setAppState('GATEWAY')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg transition">
-              ▶ Sınava Başla
+              {t('btnStartMic')}
             </button>
           </div>
         </div>
@@ -571,14 +573,14 @@ export default function ExamInterface() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-600 to-indigo-700 flex flex-col items-center justify-center gap-6 relative">
         <div className="text-white text-center mb-4">
-          <p className="text-blue-200 text-lg mb-1">Hazır olduğunuzda başlayın</p>
+          <p className="text-blue-200 text-lg mb-1">{t('gatewayDesc')}</p>
           <p className="text-2xl font-bold">{sessionUser?.name}</p>
         </div>
         <button
           onClick={() => { playTing(); startExamContent(); }}
           className="bg-white text-blue-700 text-2xl sm:text-3xl font-extrabold py-5 sm:py-6 px-10 sm:px-20 rounded-full shadow-2xl hover:shadow-blue-400 hover:scale-105 active:scale-95 transition-all"
         >
-          ▶ Kirish
+          {t('btnGatewayStart')}
         </button>
       </div>
     );
@@ -589,12 +591,12 @@ export default function ExamInterface() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-6">
         <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-md w-full text-center border border-blue-100">
           <div className="text-6xl mb-6 animate-bounce">📤</div>
-          <h2 className="text-2xl font-extrabold text-gray-800 mb-3">Ses Dosyaları Gönderiliyor</h2>
-          <p className="text-gray-500 mb-8">Lütfen bekleyin. Kayıtlarınız güvenle iletiliyor...</p>
+          <h2 className="text-2xl font-extrabold text-gray-800 mb-3">{t('uploadingTitle')}</h2>
+          <p className="text-gray-500 mb-8">{t('uploadingDesc')}</p>
           <div className="flex justify-center mb-6">
             <div className="w-14 h-14 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin" />
           </div>
-          <p className="text-sm text-gray-400">Bu pencereyi kapatmayın</p>
+          <p className="text-sm text-gray-400">{t('uploadingDontClose')}</p>
         </div>
       </div>
     );
@@ -606,41 +608,41 @@ export default function ExamInterface() {
     const timeStr = mins > 0 ? `${mins} dk ${secs} sn` : `${secs} sn`;
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-6 relative">
-        <button onClick={handleLogout} className="absolute top-6 right-6 font-bold text-green-700 hover:text-green-900 transition">Ana Sayfaya Dön</button>
+        <button onClick={handleLogout} className="absolute top-6 right-6 font-bold text-green-700 hover:text-green-900 transition">{t('finishBackHome')}</button>
         <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-green-100">
           <div className="text-7xl mb-6">🎉</div>
-          <h1 className="text-3xl font-extrabold text-gray-800 mb-2">Sınav Tamamlandı!</h1>
+          <h1 className="text-3xl font-extrabold text-gray-800 mb-2">{t('finishTitle')}</h1>
           <p className="text-gray-500 text-lg mb-8">
-            Tebrikler, <span className="font-bold text-gray-700">{sessionUser?.name}</span>!<br />
-            Konuşma sınavını başarıyla tamamladınız.
+            {t('finishCongrats')}, <span className="font-bold text-gray-700">{sessionUser?.name}</span>!<br />
+            {t('finishSuccess')}
           </p>
 
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
               <p className="text-3xl font-extrabold text-blue-600">{allRecordingsRef.current.length}</p>
-              <p className="text-sm text-gray-500 mt-1">Kayıt Tamamlandı</p>
+              <p className="text-sm text-gray-500 mt-1">{t('finishCountDone')}</p>
             </div>
             <div className="bg-green-50 rounded-2xl p-5 border border-green-100">
               <p className="text-3xl font-extrabold text-green-600">{timeStr}</p>
-              <p className="text-sm text-gray-500 mt-1">Toplam Süre</p>
+              <p className="text-sm text-gray-500 mt-1">{t('finishTotalTime')}</p>
             </div>
           </div>
           {sessionUser?.provider === 'google' && sessionUser?.email && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-700">
-              📬 Sonuç raporunuz <strong>{sessionUser.email}</strong> adresine gönderilecektir.
+              {t('finishResultEmail')} <strong>{sessionUser.email}</strong>
             </div>
           )}
           {sessionUser?.provider === 'telegram' && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-700">
-              📬 Sınav sonucunuz Telegram botumuz üzerinden size doğrudan iletilecektir.
+              {t('finishResultTelegram')}
             </div>
           )}
 
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-            <p className="font-bold text-amber-800 mb-1">🎁 Size Özel Teklif</p>
+            <p className="font-bold text-amber-800 mb-1">{t('finishSpecialOfferTitle')}</p>
             <p className="text-sm text-amber-700 mb-3">
-              Türkçe kurslarda <strong>%15 indirim</strong> fırsatını kaçırmayın!<br />
-              Kod: <strong className="bg-amber-200 px-2 py-0.5 rounded">SINAV15</strong>
+              {t('finishSpecialOfferDesc1')} <strong>{t('finishSpecialOfferDesc2')}</strong>!<br />
+              {t('finishSpecialOfferCode')}<strong className="bg-amber-200 px-2 py-0.5 rounded">SINAV15</strong>
             </p>
             <a
               href="https://turkdunyasi.uz"
@@ -648,17 +650,17 @@ export default function ExamInterface() {
               rel="noopener noreferrer"
               className="inline-block bg-amber-500 hover:bg-amber-600 text-white font-bold py-2 px-6 rounded-lg text-sm transition"
             >
-              Kurslara Göz At →
+              {t('finishSpecialOfferBtn')}
             </a>
           </div>
 
           {uploadError && (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-600">
-              ⚠️ Hata: {uploadError}. Lütfen sınav gözetmenine bildirin.
+              {t('finishError')}: {uploadError}
             </div>
           )}
 
-          <p className="text-gray-400 text-xs mt-6">🏛️ Türk Dünyası | Sayfa kapatılabilir.</p>
+          <p className="text-gray-400 text-xs mt-6">{t('finishCloseStr')}</p>
         </div>
       </div>
     );
@@ -674,14 +676,14 @@ export default function ExamInterface() {
     <div className="min-h-screen bg-white flex flex-col font-sans">
       {isOffline && (
         <div className="bg-red-500 text-white text-center py-2 font-bold px-4 text-sm z-50 sticky top-0 shadow-md">
-          ⚠️ İnternet bağlantınız koptu! Lütfen bağlantınızı kontrol edin, sınavınız kesintiye uğrayabilir.
+          {t('examInternetLost')}
         </div>
       )}
       <header className="px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center border-b bg-white shadow-sm preserve-color">
         <h1 className="text-sm sm:text-xl font-semibold text-gray-800 leading-tight">
           <span className="hidden sm:inline">Türk Dünyası | </span>
           <span className="sm:hidden">TD | </span>
-          Konuşma Sınavı
+          {t('examTitle')}
         </h1>
         <div className="flex items-center gap-2 sm:gap-4">
           <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200 rounded-lg px-2 sm:px-3 py-1.5">
@@ -713,7 +715,7 @@ export default function ExamInterface() {
             {isDarkMode ? '☀️' : '🌙'}
           </button>
           <a href="/profile" target="_blank" rel="noopener noreferrer" className="ml-1 sm:ml-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">
-            Profilim
+            {t('examProfile')}
           </a>
         </div>
       </header>
@@ -744,7 +746,7 @@ export default function ExamInterface() {
               onClick={goToNextItem}
               className="bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-2xl py-4 px-16 rounded-full shadow-xl transition-all"
             >
-              Keyingi →
+              {t('examKeyingi')}
             </button>
           </div>
         ) : (
@@ -756,7 +758,7 @@ export default function ExamInterface() {
                     <span className="font-bold text-gray-800 text-sm sm:text-base">{currentItem.section}</span>
                     {currentItem.type === 'question' && (
                       <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-0.5 rounded-md">
-                        Soru {currentQNum}/{totalQNum}
+                        {t('examSoru')} {currentQNum}/{totalQNum}
                       </span>
                     )}
                   </div>
@@ -774,8 +776,8 @@ export default function ExamInterface() {
                         let text = currentItem.question || '';
                         if (currentItem.bullets) text += ' ' + currentItem.bullets.join('. ');
                         if (currentItem.lists) {
-                          if (currentItem.lists.lehine) text += ' Lehine durumlar. ' + currentItem.lists.lehine.join('. ');
-                          if (currentItem.lists.aleyhine) text += ' Aleyhine durumlar. ' + currentItem.lists.aleyhine.join('. ');
+                          if (currentItem.lists.lehine) text += ` ${t('examLehine')} durumlar. ` + currentItem.lists.lehine.join('. ');
+                          if (currentItem.lists.aleyhine) text += ` ${t('examAleyhine')} durumlar. ` + currentItem.lists.aleyhine.join('. ');
                         }
                         speakText(text.trim());
                       }}
@@ -819,7 +821,7 @@ export default function ExamInterface() {
                         </div>
                       )}
                       <div className="grid grid-cols-2">
-                        {[{ key: 'lehine', label: 'Lehine' }, { key: 'aleyhine', label: 'Aleyhine' }].map((col, ci) => (
+                        {[{ key: 'lehine', label: t('examLehine') }, { key: 'aleyhine', label: t('examAleyhine') }].map((col, ci) => (
                           <div key={col.key} className={ci === 0 ? 'border-r-2 border-[#1B52B3]' : ''}>
                             <div className="p-3 border-b-2 border-[#1B52B3] text-center bg-[#1B52B3]">
                               <h4 className="font-bold text-white">{col.label}</h4>
@@ -845,7 +847,7 @@ export default function ExamInterface() {
               <div className="border border-gray-200 rounded-xl shadow-sm bg-white p-4 sm:p-6 flex flex-col items-center gap-3 sm:gap-4">
                 {phase === 'prep' ? (
                   <div className="flex flex-col items-center">
-                    <p className="text-yellow-600 font-bold text-sm mb-3 uppercase tracking-wide">Hazırlık Süresi</p>
+                    <p className="text-yellow-600 font-bold text-sm mb-3 uppercase tracking-wide">{t('examHazirlikSuresi')}</p>
                     <div className="relative flex items-center justify-center">
                       <svg className="w-36 h-36 -rotate-90">
                         <circle cx="72" cy="72" r="62" stroke="#f3f4f6" strokeWidth="10" fill="none" />
@@ -856,7 +858,7 @@ export default function ExamInterface() {
                       </svg>
                       <div className="absolute flex flex-col items-center">
                         <span className="text-4xl font-extrabold text-yellow-600">{timeLeft}</span>
-                        <span className="text-xs text-yellow-500 font-medium">saniye</span>
+                        <span className="text-xs text-yellow-500 font-medium">{t('examSaniye')}</span>
                       </div>
                     </div>
                   </div>
