@@ -8,9 +8,9 @@ export default function DiscussionSection({ user }) {
   const [loading, setLoading] = useState(false);
 
   const seedComments = [
-    { id: 's1', user_name: 'Dilshodbek Ergashev', comment: 'Sinov juda qiziqarli o'tdi, savollar darajasi ancha baland ekan. Hammaga maslahat beraman! 🚀', avatar_url: 'https://i.pravatar.cc/150?u=dilshod', created_at: new Date(Date.now() - 3600000).toISOString() },
-    { id: 's2', user_name: 'Malika Qodirova', comment: 'Gapirish qismi biroz hayajonli bo'ldi, lekin AI baholashi kutilmaganda juda adolatli chiqdi. Rahmat!', avatar_url: 'https://i.pravatar.cc/150?u=malika', created_at: new Date(Date.now() - 86400000).toISOString() },
-    { id: 's3', user_name: 'Jasur Jo'rayev', comment: 'Yangi savollar qachon qo'shiladi? Ayniqsa Listening qismini intizarlik bilan kutyapmiz. Omad!', avatar_url: 'https://i.pravatar.cc/150?u=jasur', created_at: new Date(Date.now() - 172800000).toISOString() }
+    { id: 's1', user_name: 'Dilshodbek Ergashev', comment: "Sinov juda qiziqarli o'tdi, savollar darajasi ancha baland ekan. Hammaga maslahat beraman! 🚀", avatar_url: 'https://i.pravatar.cc/150?u=dilshod', created_at: new Date(Date.now() - 3600000).toISOString() },
+    { id: 's2', user_name: 'Malika Qodirova', comment: "Gapirish qismi biroz hayajonli bo'ldi, lekin AI baholashi kutilmaganda juda adolatli chiqdi. Rahmat!", avatar_url: 'https://i.pravatar.cc/150?u=malika', created_at: new Date(Date.now() - 86400000).toISOString() },
+    { id: 's3', user_name: "Jasur Jo'rayev", comment: "Yangi savollar qachon qo'shiladi? Ayniqsa Listening qismini intizarlik bilan kutyapmiz. Omad!", avatar_url: 'https://i.pravatar.cc/150?u=jasur', created_at: new Date(Date.now() - 172800000).toISOString() }
   ];
 
   useEffect(() => {
