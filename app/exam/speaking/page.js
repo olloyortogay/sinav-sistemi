@@ -100,10 +100,10 @@ export default function ExamInterface() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Eğer session User varsa ve LOGIN ekranındaysak, otomatik olarak MIC_CHECK'e geçebiliriz.
+  // Giriş yapılınca direkt ana sayfaya (Dashboard) yönlendir
   useEffect(() => {
     if (sessionUser && appState === 'LOGIN') {
-      // Giriş bildirimi gönder
+      // Giriş bildirimi gönder (sadece 1 kez)
       const notifyKey = `notified_login_v2_${sessionUser.id}`;
       if (!localStorage.getItem(notifyKey)) {
         fetch('/api/notifyLogin', {
@@ -114,7 +114,8 @@ export default function ExamInterface() {
         localStorage.setItem(notifyKey, 'true');
       }
       
-      setAppState('MIC_CHECK');
+      // MIC_CHECK'i atla → direkt ana sayfaya git
+      window.location.href = '/';
     }
   }, [sessionUser, appState]);
 
