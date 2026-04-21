@@ -3,7 +3,17 @@ import { NextResponse } from 'next/server';
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { studentName, audioLinks } = body;
+    // userInfo => { name, email, provider, telegramUsername, timeTaken }
+    const { userInfo, audioLinks, studentName } = body;
+    
+    // Markdown özel karakterlerini escape et
+    const escMd = (str) => String(str).replace(/[*_`[\]()~>#+=|{}.!-]/g, '\\$&');
+
+    const safeName = escMd(userInfo?.name || studentName || 'Bilinmeyen_Ogrenci');
+    const emailInfo = userInfo?.email ? `\n✉️ E-posta: ${escMd(userInfo.email)}` : '';
+    const tgInfo = userInfo?.telegramUsername ? `\n✈️ Telegram: ${escMd(userInfo.telegramUsername)}` : '';
+    const timeInfo = userInfo?.timeTaken ? `\n⏱️ Süre: ${Math.floor(userInfo.timeTaken / 60)} dk ${userInfo.timeTaken % 60} sn` : '';
+    const providerInfo = userInfo?.provider ? `\n🔑 Giriş Tipi: ${escMd(userInfo.provider.toUpperCase())}` : '';
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -16,14 +26,16 @@ export async function POST(request) {
       return NextResponse.json({ success: false, error: "Gönderilecek ses linki yok." }, { status: 400 });
     }
 
+    const captionText = `🎓 *ÖĞRENCİ SINAV DOSYASI*\n\n📌 Öğrenci Adı: ${safeName}${emailInfo}${tgInfo}${providerInfo}${timeInfo}\n📂 Kayıt: ${audioLinks.length} Bölüm`;
+
     const mediaGroup = audioLinks.map((item, index) => {
       return {
         type: 'audio',
         media: item.url,
-        caption: index === 0 ? `🎓 ÖĞRENCİ SINAV DOSYASI\n\n📌 Öğrenci Adı: ${studentName}\n📂 Toplam Kayıt: ${audioLinks.length} Bölüm` : '',
-        parse_mode: 'HTML',
+        caption: index === 0 ? captionText : '',
+        parse_mode: 'Markdown',
         title: item.sectionName,
-        performer: studentName
+        performer: safeName
       };
     });
 

@@ -40,11 +40,7 @@ export async function POST(request) {
     const score = parseInt(scoreText, 10);
     
     if (!studentName || isNaN(score)) {
-       return NextResponse.json({ ok: true, reason: 'No student name or NaN score' });
-    }
-    
-    if (isNaN(score)) {
-       return NextResponse.json({ ok: true, reason: 'NaN score' });
+       return NextResponse.json({ ok: true, reason: 'No student name or invalid score' });
     }
 
     const supabase = getSupabase();

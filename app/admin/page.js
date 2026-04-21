@@ -182,9 +182,10 @@ export default function AdminPage() {
     });
     const d = await res.json();
     if (d.success) {
-      localStorage.setItem('admin_token', 'authenticated');
+      localStorage.setItem('admin_token', d.token); // Gerçek UUID token kullan
       setIsAuth(true);
       fetchSettings();
+      fetchResults();
     } else {
       setLoginError(d.error);
     }

@@ -124,7 +124,8 @@ export default function ExamInterface() {
       provider: 'telegram',
       id: telegramUser.id,
       name: telegramUser.first_name + (telegramUser.last_name ? ' ' + telegramUser.last_name : ''),
-      email: telegramUser.username ? `${telegramUser.username}@telegram.user` : null,
+      email: null, // Sahte email yok
+      telegramUsername: telegramUser.username ? '@' + telegramUser.username : null,
       rawData: telegramUser
     };
     setSessionUser(userObj);
@@ -371,8 +372,8 @@ export default function ExamInterface() {
     const rawUserName = sessionUser?.name || 'Bilinmeyen_Ogrenci';
     const userEmail = sessionUser?.email || null;
 
-    // Karakter temizleme fonksiyonu (Sadece harf, rakam ve alt tire bırakır)
-    const cleanStr = (str) => str.replace(/[^a-zA-Z0-9]/g, '_');
+    // Karakter temizleme fonksiyonu (Türkçe karakterleri de korur)
+    const cleanStr = (str) => str.replace(/[^a-zA-Z0-9ğüşöçıİĞÜŞÖÇ]/g, '_');
     const safeStudentName = cleanStr(rawUserName);
 
     try {
@@ -409,10 +410,18 @@ export default function ExamInterface() {
 
       // 3. Telegram API'ye gönder (Audio linkleri toplu gönder)
       try {
+        const userInfo = {
+          name: rawUserName,
+          email: userEmail,
+          provider: sessionUser?.provider || 'Bilinmiyor',
+          telegramUsername: sessionUser?.telegramUsername || null,
+          timeTaken: totalElapsed
+        };
+
         const telegramRes = await fetch('/api/sendToTelegramBulk', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ studentName: rawUserName, audioLinks }),
+          body: JSON.stringify({ userInfo, audioLinks }),
         });
         const telegramResult = await telegramRes.json();
         if (!telegramResult.success) console.error('Telegram hatası:', telegramResult.error);
@@ -545,10 +554,10 @@ export default function ExamInterface() {
           </p>
           <div className="space-y-3 mt-8">
             <button onClick={testMicrophone} className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 rounded-xl text-lg transition shadow-md shadow-yellow-200">
-              🔍 Mikrofonni tekshirish
+              🔍 Mikrofonu Test Et
             </button>
             <button onClick={() => setAppState('GATEWAY')} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl text-lg transition">
-              İmtihonni boshlash
+              ▶ Sınava Başla
             </button>
           </div>
         </div>
@@ -616,10 +625,14 @@ export default function ExamInterface() {
               <p className="text-sm text-gray-500 mt-1">Toplam Süre</p>
             </div>
           </div>
-
-          {sessionUser?.email && (
+          {sessionUser?.provider === 'google' && sessionUser?.email && (
             <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-700">
               📬 Sonuç raporunuz <strong>{sessionUser.email}</strong> adresine gönderilecektir.
+            </div>
+          )}
+          {sessionUser?.provider === 'telegram' && (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-5 text-sm text-blue-700">
+              📬 Sınav sonucunuz Telegram botumuz üzerinden size doğrudan iletilecektir.
             </div>
           )}
 
@@ -683,10 +696,10 @@ export default function ExamInterface() {
           <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
             {/* Avatar veya Provider Logosu */}
             {sessionUser?.rawData?.user_metadata?.avatar_url || sessionUser?.rawData?.photo_url ? (
-              <img 
-                src={sessionUser.rawData.user_metadata?.avatar_url || sessionUser.rawData.photo_url} 
-                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-200" 
-                alt="Avatar" 
+              <img
+                src={sessionUser.rawData.user_metadata?.avatar_url || sessionUser.rawData.photo_url}
+                className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-200"
+                alt="Avatar"
               />
             ) : (
               <>
@@ -697,7 +710,7 @@ export default function ExamInterface() {
             <p className="font-semibold text-gray-700 text-xs sm:text-base truncate max-w-[70px] sm:max-w-none">{sessionUser?.name}</p>
           </div>
           <button onClick={() => setIsDarkMode(!isDarkMode)} className="ml-1 sm:ml-2 p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors" title="Karanlık / Aydınlık Tema">
-             {isDarkMode ? '☀️' : '🌙'}
+            {isDarkMode ? '☀️' : '🌙'}
           </button>
           <a href="/profile" target="_blank" rel="noopener noreferrer" className="ml-1 sm:ml-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">
             Profilim
@@ -761,8 +774,8 @@ export default function ExamInterface() {
                         let text = currentItem.question || '';
                         if (currentItem.bullets) text += ' ' + currentItem.bullets.join('. ');
                         if (currentItem.lists) {
-                           if (currentItem.lists.lehine) text += ' Lehine durumlar. ' + currentItem.lists.lehine.join('. ');
-                           if (currentItem.lists.aleyhine) text += ' Aleyhine durumlar. ' + currentItem.lists.aleyhine.join('. ');
+                          if (currentItem.lists.lehine) text += ' Lehine durumlar. ' + currentItem.lists.lehine.join('. ');
+                          if (currentItem.lists.aleyhine) text += ' Aleyhine durumlar. ' + currentItem.lists.aleyhine.join('. ');
                         }
                         speakText(text.trim());
                       }}

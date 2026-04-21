@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   description: "Türk dili konuşma becerilerini ölçen profesyonel sınav platformu",
   keywords: ["Türkçe sınav", "konuşma sınavı", "Türk Dünyası", "dil sınavı"],
   icons: {
-    icon: "https://turkdunyasi.uz/logo.webp"
+    icon: "/images/logo.webp"
   }
 };
 

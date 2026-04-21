@@ -10,25 +10,31 @@ export default function ProfilePage() {
 
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        setSessionUser({
-          provider: 'google',
-          id: session.user.id,
-          name: session.user.user_metadata?.full_name || session.user.email,
-          email: session.user.email,
-        });
-      } else {
-        const tgData = localStorage.getItem('tg_user');
-        if (tgData) {
-          const user = JSON.parse(tgData);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
           setSessionUser({
-            provider: 'telegram',
-            id: String(user.id),
-            name: `${user.first_name || ''} ${user.last_name || ''}`.trim(),
-            telegram_username: user.username,
+            provider: 'google',
+            id: session.user.id,
+            name: session.user.user_metadata?.full_name || session.user.email,
+            email: session.user.email,
           });
+        } else {
+          const tgData = localStorage.getItem('tg_session');
+          if (tgData) {
+            const user = JSON.parse(tgData);
+            setSessionUser({
+              provider: 'telegram',
+              id: String(user.id),
+              name: user.name || `${user.first_name || ''} ${user.last_name || ''}`.trim(),
+              telegram_username: user.telegramUsername || user.username,
+            });
+          }
         }
+      } catch (e) {
+        console.error("Session check error:", e);
+      } finally {
+        setLoading(false);
       }
     };
     checkSession();
@@ -61,13 +67,13 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    localStorage.removeItem('tg_user');
+    localStorage.removeItem('tg_session');
     window.location.href = '/';
   };
 
   const handleTelegramAuth = (user) => {
     // If they link telegram, save it
-    localStorage.setItem('tg_user', JSON.stringify(user));
+    localStorage.setItem('tg_session', JSON.stringify({ provider: 'telegram', ...user }));
     window.location.reload();
   };
 
@@ -112,8 +118,8 @@ export default function ProfilePage() {
 
           {!hasTelegramLinked && (
             <div className="bg-yellow-50 border border-yellow-200 p-4 sm:p-6 rounded-xl">
-              <h3 className="font-bold text-yellow-800 mb-2">Telegram Hesabınızı Bağlayın</h3>
-              <p className="text-yellow-700 text-sm mb-4">Sınav puanlarınızı görebilmek ve sistemden otomatik bildirim alabilmek için Telegram hesabınızı bağlamanız zorunludur.</p>
+              <h3 className="font-bold text-yellow-800 mb-2">Telegram Hesabınızı Bağlayın (İsteğe Bağlı)</h3>
+              <p className="text-yellow-700 text-sm mb-4">Telegram hesabınızı bağlayarak soruşturma sonuçlarınızı doğrudan Telegram üzerinden de alabilirsiniz.</p>
               <TelegramLoginWidget botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME} onAuth={handleTelegramAuth} />
             </div>
           )}
@@ -135,15 +141,11 @@ export default function ProfilePage() {
                        <p className="text-sm text-gray-500 mt-1">Süre: {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}</p>
                     </div>
                     <div className="mt-4 sm:mt-0 flex items-center justify-end">
-                       {!hasTelegramLinked ? (
-                         <div className="bg-gray-100 text-gray-500 px-4 py-2 rounded-lg font-bold flex items-center gap-2">
-                           <span>🔒 Gizli Puan</span>
-                         </div>
-                       ) : (
-                         <div className={`px-5 py-2 rounded-lg font-extrabold text-lg text-white ${r.score !== null ? 'bg-green-500 shadow-green-200 shadow-lg' : 'bg-orange-400 shadow-orange-200 shadow-md'}`}>
-                           {r.score !== null ? `${r.score} Puan` : 'Not Bekleniyor'}
-                         </div>
-                       )}
+                       <div className={`px-5 py-2 rounded-lg font-extrabold text-lg text-white ${
+                         r.score !== null ? 'bg-green-500 shadow-green-200 shadow-lg' : 'bg-orange-400 shadow-orange-200 shadow-md'
+                       }`}>
+                         {r.score !== null ? `${r.score} Puan` : 'Not Bekleniyor'}
+                       </div>
                     </div>
                   </div>
                 ))}
