@@ -71,7 +71,7 @@ ${fullTranscription}`;
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "llama3-8b-8192", // Fast and capable
+        model: "llama-3.1-8b-instant", // Daha hızlı ve kararlı
         messages: [{ role: "user", content: evaluationPrompt }],
         temperature: 0.5
       })

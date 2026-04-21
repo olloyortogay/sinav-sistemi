@@ -14,6 +14,9 @@ export default function ExamInterface() {
   const [sessionUser, setSessionUser] = useState(null); // { id, name, email, provider, rawData }
   const { t } = useLanguage();
 
+  // Kullanıcı daha önce giriş yapmış mı? (Sınav başlatma vs Login akışını ayırt eder)
+  const isPreloadedAuthRef = useRef(false);
+
   // ── Exam State ─────────────────────────────────────────────────────────────
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -62,6 +65,7 @@ export default function ExamInterface() {
     const checkSupabaseSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        isPreloadedAuthRef.current = true; // Zaten giriş yapılmış!
         setSessionUser({
           provider: 'google',
           id: session.user.id,
@@ -83,9 +87,6 @@ export default function ExamInterface() {
           email: session.user.email,
           rawData: session.user
         });
-      } else {
-        // Eğer Telegram ile girmişse onu silmeme adına burada state'i temizlemiyoruz,
-        // SignOut istenirse özel bir fonksiyonla temizlenmeli.
       }
     });
 
@@ -93,6 +94,7 @@ export default function ExamInterface() {
     try {
       const tgUser = localStorage.getItem('tg_session');
       if (tgUser) {
+        isPreloadedAuthRef.current = true; // Zaten giriş yapılmış!
         setSessionUser(JSON.parse(tgUser));
       }
     } catch (e) { }
@@ -100,22 +102,25 @@ export default function ExamInterface() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Giriş yapılınca direkt ana sayfaya (Dashboard) yönlendir
+  // Giriş akışı kontrolü: zaten giriş yapılmışsa MIC_CHECK, yeni giriş yapıldıysa dashboard
   useEffect(() => {
     if (sessionUser && appState === 'LOGIN') {
-      // Giriş bildirimi gönder (sadece 1 kez)
-      const notifyKey = `notified_login_v2_${sessionUser.id}`;
-      if (!localStorage.getItem(notifyKey)) {
-        fetch('/api/notifyLogin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: sessionUser, provider: sessionUser.provider })
-        }).catch(()=>{});
-        localStorage.setItem(notifyKey, 'true');
+      if (isPreloadedAuthRef.current) {
+        // Kullanıcı zaten giriş yapmış ve sınavı başlatmak için sayfaya geldi
+        setAppState('MIC_CHECK');
+      } else {
+        // Kullanıcı az önce giriş yaptı → dashboard'a yönlendir
+        const notifyKey = `notified_login_v2_${sessionUser.id}`;
+        if (!localStorage.getItem(notifyKey)) {
+          fetch('/api/notifyLogin', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user: sessionUser, provider: sessionUser.provider })
+          }).catch(()=>{});
+          localStorage.setItem(notifyKey, 'true');
+        }
+        window.location.href = '/';
       }
-      
-      // MIC_CHECK'i atla → direkt ana sayfaya git
-      window.location.href = '/';
     }
   }, [sessionUser, appState]);
 
@@ -718,7 +723,7 @@ export default function ExamInterface() {
       )}
       <header className="px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center border-b bg-white shadow-sm preserve-color">
         <h1 className="text-sm sm:text-xl font-semibold text-gray-800 leading-tight">
-          <span className="hidden sm:inline">Türk Dünyası | </span>
+          <span className="hidden sm:inline">Turk dunyosi | </span>
           <span className="sm:hidden">TD | </span>
           {t('examTitle')}
         </h1>
@@ -740,11 +745,10 @@ export default function ExamInterface() {
                 className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-gray-200"
                 alt="Avatar"
               />
+            ) : sessionUser?.provider === 'google' ? (
+              <svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" /><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" /><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" /><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" /></svg>
             ) : (
-              <>
-                {sessionUser?.provider === 'google' && <span>🇬</span>}
-                {sessionUser?.provider === 'telegram' && <span>✈️</span>}
-              </>
+              <svg className="w-4 h-4 fill-[#2AABEE]" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.11.03-1.84 1.18-5.2 3.45-.49.34-.94.51-1.34.5-.44-.01-1.28-.24-1.9-.45-.77-.25-1.38-.38-1.33-.8.02-.22.33-.45.92-.69 3.61-1.57 6.02-2.61 7.23-3.1 3.44-1.42 4.15-1.68 4.62-1.69.1 0 .33.02.46.12.11.08.13.19.14.28z"/></svg>
             )}
             <p className="font-semibold text-gray-700 text-xs sm:text-base truncate max-w-[70px] sm:max-w-none">{sessionUser?.name}</p>
           </div>
