@@ -11,7 +11,7 @@ function getSupabase() {
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { userName, userEmail, telegramAuthId, variantNo, totalTime } = body;
+    const { userName, userEmail, telegramAuthId, variantNo, totalTime, sections } = body;
 
     const supabase = getSupabase();
     if (!supabase) {
@@ -27,6 +27,7 @@ export async function POST(request) {
         telegram_chat_id: telegramAuthId ? String(telegramAuthId) : null,
         variant_no:   variantNo || 'random',
         total_time:   totalTime || 0,
+        sections:     sections  || {}, // Yeni şemadaki JSONB kolonu
         completed_at: new Date().toISOString(),
       }])
       .select('id')
