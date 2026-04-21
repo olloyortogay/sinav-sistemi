@@ -65,9 +65,24 @@ export default function LandingPage() {
   ];
 
   const socialLinks = [
-    { name: 'Telegram Kanal', icon: '✈️', url: 'https://t.me/turkdunyasi_on', color: 'bg-[#229ED9]' },
-    { name: 'Instagram', icon: '📸', url: 'https://www.instagram.com/turkdunyasi2026/', color: 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]' },
-    { name: 'Admin İletişim', icon: '👤', url: 'https://t.me/Marjona_ustoz', color: 'bg-[#0088cc]' },
+    { 
+      name: 'Telegram Kanal', 
+      icon: <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.446 1.394c-.14.18-.357.223-.548.223l.188-2.85 5.18-4.686c.223-.204-.054-.31-.35-.116l-6.405 4.027-2.75-.86c-.598-.184-.61-.592.126-.883l10.73-4.136c.49-.18.918.118.784.88z"/></svg>, 
+      url: 'https://t.me/turkdunyasi_on', 
+      color: 'bg-[#229ED9]' 
+    },
+    { 
+      name: 'Instagram', 
+      icon: <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>, 
+      url: 'https://www.instagram.com/turkdunyasi2026/', 
+      color: 'bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7]' 
+    },
+    { 
+      name: 'Admin İletişim', 
+      icon: <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2"><path strokeLinecap="round" strokeLinejoin="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" /></svg>, 
+      url: 'https://t.me/Marjona_ustoz', 
+      color: 'bg-[#5b21b6]' 
+    },
   ];
 
   return (
@@ -79,13 +94,6 @@ export default function LandingPage() {
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-blue-50/50 via-transparent to-transparent -z-10"></div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-blue-50 px-4 py-1.5 rounded-full mb-8 border border-blue-100 animate-fade-in">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-            </span>
-            <span className="text-xs font-bold text-blue-700 tracking-wider uppercase">{t('heroBadge')}</span>
-          </div>
 
           <h1 className="text-5xl sm:text-7xl font-extrabold text-gray-900 mb-6 tracking-tight">
             {t('heroTitlePart1')} <br />
@@ -127,8 +135,8 @@ export default function LandingPage() {
               : 'bg-gray-50 border-gray-100 opacity-80'
             }`}>
               {!mod.active && (
-                <div className="absolute top-4 right-4 bg-gray-200 text-gray-500 text-[10px] font-black px-2.5 py-1 rounded-full tracking-widest uppercase">
-                  Yaqinda
+                <div className="absolute top-4 right-4 bg-gray-200 text-gray-500 text-[10px] font-black px-2.5 py-1 rounded-full tracking-widest">
+                  {t('soon')}
                 </div>
               )}
               <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-3xl mb-6 shadow-inner ${
@@ -168,7 +176,7 @@ export default function LandingPage() {
             </div>
 
             <div className="flex flex-col items-center gap-4">
-              <p className="text-gray-400 font-bold text-xs uppercase tracking-widest mb-2">{t('footerContactTitle')}</p>
+              <p className="text-gray-400 font-bold text-xs tracking-widest mb-2">{t('footerContactTitle')}</p>
               <div className="flex flex-wrap justify-center gap-4">
                 {socialLinks.map((link) => (
                   <a 
@@ -187,9 +195,9 @@ export default function LandingPage() {
 
             <div className="text-center md:text-right">
               <p className="text-gray-400 text-sm mb-4">{t('footerAlert')}</p>
-              <Link href="/exam/speaking" className="inline-block bg-white text-gray-900 font-black py-3 px-8 rounded-xl hover:bg-blue-50 transition">
+              <a href="https://www.turkdunyasi.uz/register" target="_blank" rel="noopener noreferrer" className="inline-block bg-white text-gray-900 font-black py-3 px-8 rounded-xl hover:bg-blue-50 transition">
                 {t('footerAction')}
-              </Link>
+              </a>
             </div>
           </div>
           

@@ -2,7 +2,10 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import TelegramLoginWidget from '../../components/TelegramLoginWidget';
+import Navbar from '../../components/Navbar';
 import { useLanguage } from '../../lib/LanguageContext';
+import Link from 'next/link';
+import React from 'react';
 
 export default function ProfilePage() {
   const [sessionUser, setSessionUser] = useState(null);
@@ -85,10 +88,10 @@ export default function ProfilePage() {
 
   if (!sessionUser) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 font-sans">
+      <div className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-blue-100 selection:text-blue-900 flex flex-col items-center justify-center p-6">
         <h2 className="text-2xl font-bold mb-4 text-gray-800">{t('login')}</h2>
         <p className="mb-6 text-gray-600 border px-4 py-2 bg-white rounded shadow-sm">{t('discMustLogin')}</p>
-        <a href="/" className="bg-blue-600 text-white px-6 py-2 rounded font-bold">{t('navHome')}</a>
+        <Link href="/" className="bg-blue-600 text-white px-6 py-2 rounded font-bold">{t('navHome')}</Link>
       </div>
     );
   }
@@ -96,17 +99,24 @@ export default function ProfilePage() {
   const hasTelegramLinked = sessionUser.provider === 'telegram';
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans p-4 sm:p-8">
-      <div className="max-w-4xl mx-auto bg-white shadow-xl rounded-2xl overflow-hidden border border-gray-100">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-6 sm:p-10 text-white flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold mb-1">{t('profTitle')}</h1>
-            <p className="text-blue-100 text-sm">{t('profDesc')}</p>
+    <div className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-blue-100 selection:text-blue-900">
+      <Navbar />
+      
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <Link href="/" className="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium mb-6 transition">
+          <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+          {t('navHome')} (Bosh sahifa)
+        </Link>
+        <div className="bg-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[2rem] overflow-hidden border border-gray-100">
+          <div className="bg-blue-50/50 p-6 sm:p-10 border-b border-blue-100/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-gray-900 mb-1">{t('profTitle')}</h1>
+              <p className="text-gray-500 font-medium text-sm">{t('profDesc')}</p>
+            </div>
+            <button onClick={handleLogout} className="bg-white hover:bg-gray-50 text-red-600 border border-gray-200 px-5 py-2.5 rounded-xl font-bold text-sm transition shadow-sm hover:shadow">
+              {t('logout')}
+            </button>
           </div>
-          <button onClick={handleLogout} className="bg-white/20 hover:bg-white/30 px-4 py-2 rounded-lg font-bold text-sm transition">
-            {t('logout')}
-          </button>
-        </div>
 
         <div className="p-6 sm:p-10 space-y-8">
           {/* USER INFO */}
@@ -134,13 +144,19 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 {results.map(r => (
-                  <div key={r.id} className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition">
-                    <div>
+                  <React.Fragment key={r.id}>
+                    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition">
+                      <div>
                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
                           {new Date(r.completed_at).toLocaleString('tr-TR')}
                        </span>
                        <h4 className="font-bold text-gray-800">{t('examTitle')} ({t('profExamVariant')} {r.variant_no})</h4>
                        <p className="text-sm text-gray-500 mt-1">{t('profDuration')}: {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}</p>
+                       {r.score !== null && r.score >= 70 && (
+                         <div className="mt-2 inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full border border-yellow-300 shadow-sm" title="Tebrikler!">
+                           🏆 Oliy Daraja (Üstün Başarı)
+                         </div>
+                       )}
                     </div>
                     <div className="mt-4 sm:mt-0 flex items-center justify-end">
                        <div className={`px-5 py-2 rounded-lg font-extrabold text-lg text-white ${
@@ -150,13 +166,25 @@ export default function ProfilePage() {
                        </div>
                     </div>
                   </div>
+                  {r.sections?.ai_feedback && (
+                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mt-2 !mb-6 shadow-sm">
+                      <div className="flex items-center gap-2 font-bold text-blue-800 mb-2 border-b border-blue-200 pb-2">
+                        <span className="text-xl">🤖</span> 
+                        AI Analizi (Yapay Zeka Değerlendirmesi)
+                      </div>
+                      <div className="text-sm text-gray-700 leading-relaxed font-medium whitespace-pre-line">
+                        {r.sections.ai_feedback}
+                      </div>
+                    </div>
+                  )}
+                </React.Fragment>
                 ))}
               </div>
             )}
           </div>
-
         </div>
-      </div>
+        </div>
+      </main>
     </div>
   );
 }

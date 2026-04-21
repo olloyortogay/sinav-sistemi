@@ -451,6 +451,7 @@ export default function ExamInterface() {
       }
 
       // --- 2. VERİTABANINA KAYDET ---
+      let dbResultId = null;
       try {
         const dbRes = await fetch('/api/saveResult', {
           method: 'POST',
@@ -463,14 +464,24 @@ export default function ExamInterface() {
             totalTime: Number(totalElapsed),
           }),
         });
-        if (!dbRes.ok) {
-          const errorData = await dbRes.json();
-          console.error("Veritabanı Hatası:", errorData);
+        const resData = await dbRes.json();
+        if (!dbRes.ok || !resData.success) {
+          console.error("Veritabanı Hatası:", resData);
         } else {
-          console.log("Veritabanı kaydı başarılı!");
+          dbResultId = resData.resultId;
+          console.log("Veritabanı kaydı başarılı, ID:", dbResultId);
         }
       } catch (dbErr) {
         console.error("Veritabanı bağlantı hatası:", dbErr);
+      }
+
+      // --- 3. GROQ AI HESAPLAMA TETİKLEMESİ (Arka Planda) ---
+      if (dbResultId && audioLinks.length > 0) {
+        fetch('/api/analyzeAudio', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audioLinks, resultId: dbResultId })
+        }).catch(err => console.error("AI tetikleme hatası (Devam):", err));
       }
 
     } catch (err) {
