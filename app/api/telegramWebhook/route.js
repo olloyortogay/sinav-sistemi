@@ -97,7 +97,8 @@ export async function POST(request) {
     // Öğrenciye Telegram üzerinden bildirim at (Eğer telegram hesabı bağlıysa)
     if (targetExam.telegram_chat_id) {
        const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-       const msg = `🎉 *Sınav Sonucunuz Açıklandı!*\n\nMerhaba ${studentName}, Konuşma sınavınız değerlendirildi.\n\n🏆 *Verilen Puan:* ${score}\n\nDetaylı sonuçlar için [Öğrenci Panelinizi](${process.env.NEXT_PUBLIC_APP_URL}/profile) ziyaret edebilirsiniz.`;
+       const profileUrl = 'https://sinav.turkdunyasi.uz/profile';
+       const msg = `🎉 *Sinov natijangiz e'lon qilindi!*\n\nSalom ${studentName}, gapirish sinovingiz baholandi.\n\n🏆 *Berilgan ball:* ${score}\n\nBatafsil natijalar uchun [Shaxsiy kabinetingizni](${profileUrl}) ko'ring.`;
        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
          method: 'POST',
          headers: { 'Content-Type': 'application/json' },
@@ -105,9 +106,9 @@ export async function POST(request) {
        });
     }
 
-    // E-posta gönderimini tetikle
+    // E-posta gönderimini tetikle (her zaman sabit URL kullan, origin header webhook'ta boş olabilir)
     if (targetExam.user_email && process.env.RESEND_API_KEY) {
-      const baseUrl = request.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://sinav.turkdunyasi.uz';
+      const baseUrl = 'https://sinav.turkdunyasi.uz';
       await fetch(`${baseUrl}/api/sendResultEmail`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

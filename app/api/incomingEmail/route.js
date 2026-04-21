@@ -2,8 +2,23 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   try {
-    const payload = await request.json();
-    console.log("Incoming Email Payload:", payload);
+    // Resend inbound: Content-Type form-data veya JSON olabilir
+    let payload = {};
+    const contentType = request.headers.get('content-type') || '';
+    
+    if (contentType.includes('application/json')) {
+      payload = await request.json();
+    } else if (contentType.includes('multipart/form-data') || contentType.includes('application/x-www-form-urlencoded')) {
+      const formData = await request.formData();
+      for (const [key, value] of formData.entries()) {
+        payload[key] = value;
+      }
+    } else {
+      // Fallback: JSON dene
+      try { payload = await request.json(); } catch { payload = {}; }
+    }
+
+    console.log("Incoming Email Payload keys:", Object.keys(payload));
 
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
@@ -13,13 +28,20 @@ export async function POST(request) {
       return NextResponse.json({ success: false, reason: 'No telegram config' });
     }
 
-    // Resend Inbound Webhook payload structure
-    const from = payload.from || "Bilinmeyen Gönderici";
-    const subject = payload.subject || "Konusuz";
-    const textContext = payload.text || payload.html || "İçerik Yok";
+    // Resend Inbound farklı field isimlerini kullanabilir
+    const from = payload.from || payload.sender || payload.From || "Bilinmeyen Gönderici";
+    const subject = payload.subject || payload.Subject || "Konusuz";
+    // text, html veya body alanlarından al
+    const textContent = payload.text || payload.plain || payload.body || payload.html || null;
     
-    // Telegram'da çok uzun mesajları keselim
-    const shortText = textContext.length > 500 ? textContext.slice(0, 500) + '...' : textContext;
+    // HTML varsa, tag'leri temizle
+    const cleanText = textContent 
+      ? textContent.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+      : null;
+      
+    const shortText = cleanText 
+      ? (cleanText.length > 600 ? cleanText.slice(0, 600) + '...' : cleanText)
+      : '⚠️ E-posta içeriği parse edilemedi. Ham payload: ' + JSON.stringify(payload).slice(0, 200);
 
     const msg = `📧 *YENİ E-POSTA GELDİ!*\n\n*Kimden:* ${from}\n*Kime:* sinav@turkdunyasi.uz\n*Konu:* ${subject}\n\n*Mesaj:* \n${shortText}`;
 
