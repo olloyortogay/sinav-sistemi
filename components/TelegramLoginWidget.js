@@ -20,7 +20,7 @@ export default function TelegramLoginWidget({ onAuth, botName }) {
       script.setAttribute('data-telegram-login', botName);
       script.setAttribute('data-size', 'large');
       script.setAttribute('data-radius', '15');
-      script.setAttribute('data-userpic', 'false');
+      script.setAttribute('data-userpic', 'true');
       script.setAttribute('data-lang', sysLang === 'tr' ? 'tr' : 'uz'); // Dili zorla
       script.setAttribute('data-onauth', 'onTelegramAuth(user)');
       script.async = true;
