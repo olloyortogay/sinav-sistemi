@@ -11,7 +11,7 @@ export async function POST(request) {
 
     // 1) Admin'e Bildirim Gönder (Elitedu üzerinden)
     if (ELITEDU_BOT_TOKEN && ADMIN_CHAT_ID) {
-      const adminText = `🔔 *Yangi o'quvchi tizimga kirdi!*\n\n👤 Ism: *${user.name}*\n🔑 Usul: *${provider === 'telegram' ? '✈️ Telegram' : '🇬 Google'}*\n${user.email ? `✉️ Email: ${user.email}\n` : ''}${user.telegramUsername ? `🔗 Username: ${user.telegramUsername}\n` : ''}⏰ Vaqt: ${new Date().toLocaleString('uz-UZ')}`;
+      const adminText = `🔔 *Yangi o'quvchi tizimga kirdi!*\n\n👤 Ism: *${user.name}*\n🔑 Usul: *${provider === 'telegram' ? '✈️ Telegram' : '🇬 Google'}*\n${user.email ? `✉️ Email: ${user.email}\n` : ''}${user.telegramUsername ? `🔗 Username: ${user.telegramUsername}\n` : ''}${provider === 'telegram' && user.id ? `🆔 Chat ID: \`${user.id}\`\n` : ''}⏰ Vaqt: ${new Date().toLocaleString('uz-UZ')}`;
       
       await fetch(`https://api.telegram.org/bot${ELITEDU_BOT_TOKEN}/sendMessage`, {
         method: 'POST',

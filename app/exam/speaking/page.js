@@ -145,14 +145,8 @@ export default function ExamInterface() {
     // Sayfa yenilenmesine karşı tarayıcıya kaydet
     localStorage.setItem('tg_session', JSON.stringify(userObj));
     
-    // Arkada bildirim at
-    fetch('/api/notifyLogin', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user: userObj, provider: 'telegram' })
-    }).catch(()=>{});
-
-    window.location.href = '/';
+    // Yönlendirme (window.location.href) veya bildirim (notifyLogin) BURADAN KALDIRILDI.
+    // Çünkü useEffect içerisinde hem state tespiti yapılıp bildirim atılacak, hem de MIC_CHECK'e geçecek.
   };
 
   const handleLogout = async () => {
