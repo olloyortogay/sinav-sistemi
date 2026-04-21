@@ -358,25 +358,22 @@ export const generateExam = (variant = 'random') => {
   let p1Questions, p12Scenario, p2Scenario, p3Question;
 
   if (variant === 'random') {
-    const shuffle = (arr) => [...arr].sort(() => 0.5 - Math.random());
-    p1Questions  = shuffle(examBank.part1).slice(0, 3);
-    p12Scenario  = shuffle(examBank.part1_2)[0];
-    p2Scenario   = shuffle(examBank.part2)[0];
-    p3Question   = shuffle(examBank.part3)[0];
-  } else {
-    // Sayısal varyant — 1-indexed
-    const idx = (parseInt(variant, 10) - 1) || 0;
-    const { part1, part1_2, part2, part3 } = examBank;
-    const p1Len = part1.length;
-    const p12Len = part1_2.length;
-    const p2Len = part2.length;
-    const p3Len = part3.length;
-
-    p1Questions  = [part1[(idx * 3) % p1Len], part1[(idx * 3 + 1) % p1Len], part1[(idx * 3 + 2) % p1Len]];
-    p12Scenario  = part1_2[idx % p12Len];
-    p2Scenario   = part2[idx % p2Len];
-    p3Question   = part3[idx % p3Len];
+    // Rastgele parçaları karıştırmak yerine rastgele hazır bir varyanta (1-50) yönlendiriyoruz.
+    variant = Math.floor(Math.random() * 50) + 1;
   }
+
+  // Artık sadece deterministik (sabit) senaryo hesaplaması yapılıyor
+  const idx = (parseInt(variant, 10) - 1) || 0;
+  const { part1, part1_2, part2, part3 } = examBank;
+  const p1Len = part1.length;
+  const p12Len = part1_2.length;
+  const p2Len = part2.length;
+  const p3Len = part3.length;
+
+  p1Questions  = [part1[(idx * 3) % p1Len], part1[(idx * 3 + 1) % p1Len], part1[(idx * 3 + 2) % p1Len]];
+  p12Scenario  = part1_2[idx % p12Len];
+  p2Scenario   = part2[idx % p2Len];
+  p3Question   = part3[idx % p3Len];
 
   // --- 1. BÖLÜM ---
   finalQuestions.push({ type: 'transition', id: globalId++, title: '1. Bölüm' });

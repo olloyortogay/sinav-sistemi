@@ -17,8 +17,12 @@ export const metadata: Metadata = {
   description: "Türk dili konuşma becerilerini ölçen profesyonel sınav platformu",
   keywords: ["Türkçe sınav", "konuşma sınavı", "Türk Dünyası", "dil sınavı"],
   icons: {
-    icon: "/images/logo.webp"
-  }
+    icon: [
+      { url: '/images/logo.webp', type: 'image/webp' },
+    ],
+    apple: '/images/logo.webp',
+    shortcut: '/images/logo.webp',
+  },
 };
 
 import Providers from "../components/Providers";

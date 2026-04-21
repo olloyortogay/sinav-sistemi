@@ -374,8 +374,16 @@ export default function ExamInterface() {
     const rawUserName = sessionUser?.name || 'Bilinmeyen_Ogrenci';
     const userEmail = sessionUser?.email || null;
 
-    // Karakter temizleme fonksiyonu (Türkçe karakterleri de korur)
-    const cleanStr = (str) => str.replace(/[^a-zA-Z0-9ğüşöçıİĞÜŞÖÇ]/g, '_');
+    // Karakter temizleme fonksiyonu (Türkçe karakterleri güvenli ascii karakterlere dönüştürür ve özel karakterleri siler)
+    const cleanStr = (str) => {
+      let s = str.replace(/ğ/g, 'g').replace(/Ğ/g, 'G')
+                 .replace(/ü/g, 'u').replace(/Ü/g, 'U')
+                 .replace(/ş/g, 's').replace(/Ş/g, 'S')
+                 .replace(/ö/g, 'o').replace(/Ö/g, 'O')
+                 .replace(/ç/g, 'c').replace(/Ç/g, 'C')
+                 .replace(/ı/g, 'i').replace(/İ/g, 'I');
+      return s.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/_$/, '');
+    };
     const safeStudentName = cleanStr(rawUserName);
 
     try {
@@ -417,7 +425,8 @@ export default function ExamInterface() {
           email: userEmail,
           provider: sessionUser?.provider || 'Bilinmiyor',
           telegramUsername: sessionUser?.telegramUsername || null,
-          timeTaken: totalElapsed
+          timeTaken: totalElapsed,
+          variantNo: activeVariant
         };
 
         const telegramRes = await fetch('/api/sendToTelegramBulk', {
@@ -619,7 +628,10 @@ export default function ExamInterface() {
     const timeStr = mins > 0 ? `${mins} dk ${secs} sn` : `${secs} sn`;
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-6 relative">
-        <button onClick={handleLogout} className="absolute top-6 right-6 font-bold text-green-700 hover:text-green-900 transition">{t('finishBackHome')}</button>
+        <a href="/" className="absolute top-6 right-6 font-bold text-green-700 hover:text-green-900 transition flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+          {t('finishBackHome')}
+        </a>
         <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-green-100">
           <div className="text-7xl mb-6">🎉</div>
           <h1 className="text-3xl font-extrabold text-gray-800 mb-2">{t('finishTitle')}</h1>
