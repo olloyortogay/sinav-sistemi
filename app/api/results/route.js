@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import { Redis } from '@upstash/redis';
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -9,11 +8,17 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-function getRedis() {
-  const url = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN;
-  if (!url || !token) return null;
-  return new Redis({ url, token });
+async function verifyAdminToken(token) {
+  if (!token) return false;
+  const supabase = getSupabase();
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase.from('app_settings').select('data').eq('id', 1).single();
+    if (!error && data?.data?.adminSessions) {
+      return data.data.adminSessions.includes(token);
+    }
+  } catch (e) { }
+  return false;
 }
 
 export async function GET(request) {
@@ -21,7 +26,6 @@ export async function GET(request) {
     const supabase = getSupabase();
     if (!supabase) return NextResponse.json({ success: false, error: 'No db' }, { status: 500 });
     
-    // Check if it's admin or user request
     const authHeader = request.headers.get('authorization');
     const token = authHeader?.split(' ')[1];
     
@@ -29,27 +33,13 @@ export async function GET(request) {
     const email = url.searchParams.get('email');
     const telegramId = url.searchParams.get('telegram_id');
     
-    // Check Admin Token
-    let isAdmin = false;
-    if (token) {
-      const redis = getRedis();
-      if (redis) {
-         try {
-           const data = await redis.get('exam_settings');
-           const store = typeof data === 'string' ? JSON.parse(data) : (data || {});
-           if (store.adminSessions && store.adminSessions.includes(token)) {
-             isAdmin = true;
-           }
-         } catch(e){}
-      }
-    }
+    const isAdmin = await verifyAdminToken(token);
     
     let query = supabase.from('exam_results').select('*').order('completed_at', { ascending: false });
     
     if (isAdmin) {
-      // Admin gets all.
+      // Admin gets all — no filter
     } else if (email || telegramId) {
-      // User request
       if (email && telegramId) {
         query = query.or(`user_email.eq.${email},telegram_chat_id.eq.${telegramId}`);
       } else if (email) {
