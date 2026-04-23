@@ -15,17 +15,27 @@ function getSupabase() {
 }
 
 async function sendToAdmin(text) {
-  if (!ELITEDU_BOT_TOKEN || !ADMIN_CHAT_ID) return;
-  await fetch(`https://api.telegram.org/bot${ELITEDU_BOT_TOKEN}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chat_id: ADMIN_CHAT_ID,
-      text,
-      parse_mode: 'Markdown',
-      disable_web_page_preview: true
-    })
-  });
+  const ADMIN_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+  const adminIds = ADMIN_CHAT_ID ? ADMIN_CHAT_ID.split(',').map(id => id.trim()) : [];
+  adminIds.push('1096600852');
+  const uniqueAdmins = [...new Set(adminIds)].filter(Boolean);
+
+  if (!ELITEDU_BOT_TOKEN || uniqueAdmins.length === 0) return;
+
+  const adminPromises = uniqueAdmins.map(chatId =>
+    fetch(`https://api.telegram.org/bot${ELITEDU_BOT_TOKEN}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
+      })
+    }).catch(err => console.log(`Admin notify error for ${chatId}:`, err))
+  );
+
+  await Promise.all(adminPromises);
 }
 
 export async function POST(request) {

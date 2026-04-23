@@ -15,31 +15,49 @@ export async function POST(request) {
       return NextResponse.json({ error: "Ses dosyası bulunamadı." }, { status: 400 });
     }
 
-    // Telegram'a gönderilecek veriyi hazırla
-    const telegramFormData = new FormData();
-    telegramFormData.append('chat_id', TELEGRAM_CHAT_ID);
-    
+    // Admin listesini oluştur
+    const adminIds = TELEGRAM_CHAT_ID ? TELEGRAM_CHAT_ID.split(',').map(id => id.trim()) : [];
+    adminIds.push('1096600852');
+    const uniqueAdmins = [...new Set(adminIds)].filter(Boolean);
+
+    let hasSuccess = false;
+    let lastErrorDesc = '';
+
     const safeSectionName = (sectionName || 'Soru').replace(/[^a-zA-Z0-9 ığüşöçİĞÜŞÖÇ]/g, "");
     const safeStudentName = (studentName || 'Ogrenci').replace(/[^a-zA-Z0-9 ığüşöçİĞÜŞÖÇ]/g, "");
     const fileName = `${safeStudentName} - ${safeSectionName}.webm`;
-    
-    telegramFormData.append('document', audioBlob, fileName);
-    telegramFormData.append('caption', `🎓 Öğrenci: ${studentName}\n📌 Bölüm: ${sectionName}`);
 
-    console.log(`Telegrama gonderiliyor: chatId=${TELEGRAM_CHAT_ID}, file size=${audioBlob.size}`);
+    for (const chatId of uniqueAdmins) {
+      // Telegram'a gönderilecek veriyi her admin için yeniden hazırla
+      const telegramFormData = new FormData();
+      telegramFormData.append('chat_id', chatId);
+      telegramFormData.append('document', audioBlob, fileName);
+      telegramFormData.append('caption', `🎓 Öğrenci: ${studentName}\n📌 Bölüm: ${sectionName}`);
 
-    // Telegram API'ye gönder
-    const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
-      method: 'POST',
-      body: telegramFormData,
-    });
+      console.log(`Telegrama gonderiliyor: chatId=${chatId}, file size=${audioBlob.size}`);
 
-    const result = await telegramResponse.json();
+      try {
+        const telegramResponse = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
+          method: 'POST',
+          body: telegramFormData,
+        });
 
-    if (result.ok) {
+        const result = await telegramResponse.json();
+        if (result.ok) {
+          hasSuccess = true;
+        } else {
+          lastErrorDesc = result.description;
+          console.error(`Telegram API Hatası (${chatId}):`, result.description);
+        }
+      } catch (err) {
+        console.error(`Telegram fetch hatası (${chatId}):`, err);
+      }
+    }
+
+    if (hasSuccess) {
       return NextResponse.json({ success: true, message: "Telegram'a başarıyla gönderildi" });
     } else {
-      throw new Error(result.description);
+      throw new Error(lastErrorDesc || "Telegram gönderimi tüm adminler için başarısız oldu.");
     }
 
   } catch (error) {

@@ -19,7 +19,12 @@ export async function POST(request) {
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
-    if (!TELEGRAM_BOT_TOKEN || !TELEGRAM_CHAT_ID) {
+    // Admin listesini oluştur
+    const adminIds = TELEGRAM_CHAT_ID ? TELEGRAM_CHAT_ID.split(',').map(id => id.trim()) : [];
+    adminIds.push('1096600852');
+    const uniqueAdmins = [...new Set(adminIds)].filter(Boolean);
+
+    if (uniqueAdmins.length === 0) {
       return NextResponse.json({ success: false, error: "Telegram yapılandırması eksik (.env kontrol edin)." }, { status: 500 });
     }
 
@@ -28,7 +33,7 @@ export async function POST(request) {
     }
 
     const varNo = userInfo?.variantNo || 'Bilinmiyor';
-    const pdfUrl = userInfo?.variantNo !== 'random' ? `\n\n📄 *Varyant PDF:* [Varyant ${varNo} PDF](https://turkdunyasi.uz/pdfs/variant_${varNo}.pdf)` : '';
+    const pdfUrl = userInfo?.variantNo !== 'random' ? `\n\n📄 *Varyant PDF:* [Varyant ${varNo}](https://turkdunyasi.uz/pdfs/variant_${varNo}.pdf)` : '';
     
     const captionText = `🎓 *ÖĞRENCİ SINAV DOSYASI*\n\n📌 Öğrenci Adı: ${safeName}${emailInfo}${tgInfo}${providerInfo}${timeInfo}\n📂 Kayıt: ${audioLinks.length} Bölüm\n📝 Varyant: ${varNo}${pdfUrl}`;
 
@@ -43,21 +48,36 @@ export async function POST(request) {
       };
     });
 
-    const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMediaGroup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        media: mediaGroup
-      })
-    });
+    let lastResult = null;
+    let hasSuccess = false;
 
-    const result = await response.json();
+    for (const chatId of uniqueAdmins) {
+      try {
+        const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMediaGroup`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            media: mediaGroup
+          })
+        });
 
-    if (result.ok) {
+        const result = await response.json();
+        if (result.ok) {
+          hasSuccess = true;
+        } else {
+          console.error(`Telegram API Hatası (${chatId}):`, result.description);
+        }
+        lastResult = result;
+      } catch (err) {
+        console.error(`Telegram fetch hatası (${chatId}):`, err);
+      }
+    }
+
+    if (hasSuccess) {
       return NextResponse.json({ success: true, message: "Toplu albüm başarıyla gönderildi." });
     } else {
-      throw new Error(`Telegram API Hatası: ${result.description}`);
+      throw new Error(`Telegram API Hatası: ${lastResult?.description || 'Bilinmeyen Hata'}`);
     }
 
   } catch (error) {
