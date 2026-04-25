@@ -23,7 +23,7 @@ export const examBank = {
   // 1.2. BÖLÜM Senaryoları (B1+ – Fotoğraf yorumlama, 3 alt sorudan oluşur)
   part1_2: [
     {
-      image_url: "/variants/1.png",
+      image_url: "1.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "\"İyi ki okudum\" dediğiniz bir kitap var mı?" },
@@ -31,7 +31,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/2.png",
+      image_url: "2.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Sabah insanı mısınız, yoksa gece mi daha verimli çalışırsınız?" },
@@ -39,7 +39,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/3.png",
+      image_url: "3.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Arkadaşlarla ders çalışmanın avantajları nelerdir?" },
@@ -47,7 +47,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/4.png",
+      image_url: "4.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Organik gıda ile işlenmiş gıda tüketiminin farkları nelerdir?" },
@@ -55,7 +55,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/5.png",
+      image_url: "5.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Yalnız seyahat etmek grup halinde seyahat etmeye göre üstünlük sağlar mı?" },
@@ -63,7 +63,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/6.png",
+      image_url: "6.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Evcil hayvan sahibi olmanın avantajları ve zorlukları nelerdir?" },
@@ -71,7 +71,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/7.png",
+      image_url: "7.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Boş zamanlarınızda arkadaşlarınızla şarkı söylemek için bir yerlere gider misiniz?" },
@@ -79,7 +79,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/8.png",
+      image_url: "8.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Takım sporları ile bireysel sporlar arasındaki temel farklar nelerdir?" },
@@ -87,7 +87,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/9.png",
+      image_url: "9.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Hangi cihazı daha çok kullanıyorsunuz: dizüstü bilgisayar mı masaüstü mü?" },
@@ -95,7 +95,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/10.png",
+      image_url: "10.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Güneşli havayı mı, yağmurlu havayı mı tercih edersiniz? Neden?" },
@@ -103,7 +103,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/11.png",
+      image_url: "11.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Çayın, kahveye göre üstünlükleri nelerdir?" },
@@ -111,7 +111,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/12.png",
+      image_url: "12.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Nasıl bir ailede büyüdünüz? Büyük ailede mi, çekirdek ailede mi?" },
@@ -119,7 +119,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/13.png",
+      image_url: "13.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Gençlerin hangi özelliklerini beğenirsiniz?" },
@@ -127,7 +127,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/14.png",
+      image_url: "14.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Hastalandığınızda doğal bitkileri mi, ilaçları mı tercih ediyorsunuz?" },
@@ -135,7 +135,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/15.png",
+      image_url: "15.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Savaş ile barış arasındaki farklar nelerdir?" },
@@ -143,7 +143,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/16.png",
+      image_url: "16.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Otobüsün, taksiye göre avantajları nelerdir?" },
@@ -151,7 +151,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/17.png",
+      image_url: "17.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Sizce sıcak havanın ne tür olumsuz yönleri vardır?" },
@@ -159,7 +159,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/18.png",
+      image_url: "18.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Siz hangisini tercih edersiniz: eski model arabalar mı yoksa yeni model arabalar mı?" },
@@ -167,7 +167,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/19.png",
+      image_url: "19.png",
       questions: [
         { q: "Bu resimlerde neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Akıllı saati mi yoksa geleneksel saati mi tercih ediyorsunuz?" },
@@ -175,7 +175,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/variants/20.png",
+      image_url: "20.png",
       questions: [
         { q: "Bu iki fotoğrafta neler görüyorsunuz? Karşılaştırabilir misiniz?" },
         { q: "Yüz yüze eğitimde beğenmediğiniz yönler nelerdir?" },
@@ -187,7 +187,7 @@ export const examBank = {
   // 2. BÖLÜM Senaryoları (B2 – Görsellerle madde maddeli tartışma)
   part2: [
     {
-      image_url: "/images/hand_drawing_1776520211426.png",
+      image_url: "hand_drawing_1776520211426.png",
       bullets: [
         "Hangi sanat alanını seviyorsunuz?",
         "Sizi nasıl etkiliyor?",
@@ -195,7 +195,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/robot_teaching_1776523987491.png",
+      image_url: "robot_teaching_1776523987491.png",
       bullets: [
         "Eğitim sisteminde robotların ve yapay zekanın kullanılması hakkında ne düşünüyorsunuz?",
         "Gelecekte öğretmenlerin yerini alabilirler mi?",
@@ -203,7 +203,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/virtual_reality_1776524002726.png",
+      image_url: "virtual_reality_1776524002726.png",
       bullets: [
         "Sanal gerçeklik (VR) ortamlarında çok fazla vakit geçirmenin yararları ve zararları nelerdir?",
         "Bu teknoloji iletişim becerilerimizi nasıl etkiliyor?",
@@ -211,7 +211,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/space_expl_1776524847790.png",
+      image_url: "space_expl_1776524847790.png",
       bullets: [
         "İnsanlığın uzayı keşfetmesi ve kolonileşmesi size ne kadar inandırıcı geliyor?",
         "Uzay araştırmaları için harcanan bütçeler açlıkla mücadeleye ayrılsa daha mı faydalı olur?",
@@ -219,7 +219,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/remote_work_1776524864659.png",
+      image_url: "remote_work_1776524864659.png",
       bullets: [
         "Uzaktan çalışma modelinin ofis çalışmasına göre avantajları nelerdir?",
         "Sürekli evden çalışmak insanların sosyalleşme yeteneğini azaltıyor mu?",
@@ -227,7 +227,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/climate_change_1776524881743.png",
+      image_url: "climate_change_1776524881743.png",
       bullets: [
         "İklim değişikliği ve küresel ısınma sizce insanlığın en büyük problemi midir?",
         "Tek tek bireylerin geri dönüşüm yapması gerçekten dünyayı kurtarmaya yeter mi?",
@@ -235,7 +235,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/auto_cars_1776524903835.png",
+      image_url: "auto_cars_1776524903835.png",
       bullets: [
         "Sürücüsüz (otonom) araçlara hayatınızı emanet eder misiniz? Neden?",
         "Sürücüsüz araçların yaygınlaşmasıyla şoförlük mesleğinin yok olması hakkında ne düşünüyorsunuz?",
@@ -243,7 +243,7 @@ export const examBank = {
       ],
     },
     {
-      image_url: "/images/ai_art_1776524920076.png",
+      image_url: "ai_art_1776524920076.png",
       bullets: [
         "Yapay zekanın sanat eserleri üretebilmesi insan yaratıcılığını değersizleştirir mi?",
         "Bir eserin 'Sanat' kabul edilmesi için mutlaka bir insan tarafından mı üretilmesi gerekir?",

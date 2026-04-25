@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateExam } from '../../data/questions';
-import { supabase } from '../../../lib/supabase';
+import { supabase, getPublicUrl } from '../../../lib/supabase';
 import TelegramLoginWidget from '../../../components/TelegramLoginWidget';
 import { useLanguage } from '../../../lib/LanguageContext';
 
@@ -233,6 +233,33 @@ export default function ExamInterface() {
       window.removeEventListener('beforeunload', guard);
     };
   }, [appState]);
+
+  // ── Anti-Copy Kalkanı ──────────────────────────────────────────────────────
+  useEffect(() => {
+    // 1. Sağ Tık (Context Menu) Engelleme
+    const handleContextMenu = (e) => e.preventDefault();
+
+    // 2. Klavye Kısayolları (Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+U, F12) Engelleme
+    const handleKeyDown = (e) => {
+      if (
+        (e.ctrlKey && (e.key === 'c' || e.key === 'v' || e.key === 'x' || e.key === 'u')) || 
+        e.key === 'F12'
+      ) {
+        e.preventDefault();
+        alert("⚠️ BU SAYFADA KOPYALAMA VE KAYNAK KODU GÖRÜNTÜLEME YASAKTIR!");
+      }
+    };
+
+    // Dinleyicileri ekle
+    document.addEventListener("contextmenu", handleContextMenu);
+    document.addEventListener("keydown", handleKeyDown);
+
+    // Sayfadan çıkınca temizle (Memory leak olmasın)
+    return () => {
+      document.removeEventListener("contextmenu", handleContextMenu);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   const formatTime = (seconds) => {
@@ -722,7 +749,10 @@ export default function ExamInterface() {
   const totalQNum = questions.filter(q => q.type === 'question').length;
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-sans">
+    <div 
+      className="min-h-screen bg-white flex flex-col font-sans select-none"
+      style={{ userSelect: 'none', WebkitUserSelect: 'none', MozUserSelect: 'none' }}
+    >
       {isOffline && (
         <div className="bg-red-500 text-white text-center py-2 font-bold px-4 text-sm z-50 sticky top-0 shadow-md">
           {t('examInternetLost')}
@@ -842,7 +872,7 @@ export default function ExamInterface() {
                 <div className="text-black" style={{ fontSize: `${1.2 * fontSizeRatio}rem` }}>
                   {currentItem.image_url && (
                     <div className="mb-5 flex justify-center">
-                      <img src={currentItem.image_url} alt="Soru" className="max-h-64 object-contain rounded-lg shadow" />
+                      <img src={getPublicUrl(currentItem.image_url)} alt="Soru" className="max-h-64 object-contain rounded-lg shadow" />
                     </div>
                   )}
                   {!currentItem.lists && currentItem.question && (

@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import * as Sentry from '@sentry/nextjs';
 import { placementQuestions } from '../../../src/data/placementQuestions';
-import { supabase } from '../../../lib/supabase';
+import { supabase, getPublicUrl } from '../../../lib/supabase';
 import TelegramLoginWidget from '../../../components/TelegramLoginWidget';
 
 export default function PlacementExamPage() {
@@ -884,7 +884,7 @@ export default function PlacementExamPage() {
             <div className="w-full bg-gray-50 border-b flex justify-center p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src={`${currentQuestion.mediaUrl}?v=${new Date().getTime()}`} 
+                src={`${getPublicUrl(currentQuestion.mediaUrl)}?v=${new Date().getTime()}`} 
                 alt="Soru Görseli" 
                 className="max-h-80 object-contain rounded-lg shadow-sm"
               />
@@ -898,7 +898,7 @@ export default function PlacementExamPage() {
               </div>
               <audio 
                 ref={audioRef} 
-                src={`${currentQuestion.mediaUrl}?v=${new Date().getTime()}`} 
+                src={`${getPublicUrl(currentQuestion.mediaUrl)}?v=${new Date().getTime()}`} 
                 className="hidden" 
                 onTimeUpdate={(e) => {
                   const curr = e.target.currentTime;
