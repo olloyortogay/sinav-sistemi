@@ -884,7 +884,7 @@ export default function PlacementExamPage() {
             <div className="w-full bg-gray-50 border-b flex justify-center p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src={`${getPublicUrl(currentQuestion.mediaUrl)}?v=${new Date().getTime()}`} 
+                src={getPublicUrl(currentQuestion.mediaUrl)} 
                 alt="Soru Görseli" 
                 className="max-h-80 object-contain rounded-lg shadow-sm"
               />
@@ -898,7 +898,7 @@ export default function PlacementExamPage() {
               </div>
               <audio 
                 ref={audioRef} 
-                src={`${getPublicUrl(currentQuestion.mediaUrl)}?v=${new Date().getTime()}`} 
+                src={getPublicUrl(currentQuestion.mediaUrl)}
                 className="hidden" 
                 onTimeUpdate={(e) => {
                   const curr = e.target.currentTime;
