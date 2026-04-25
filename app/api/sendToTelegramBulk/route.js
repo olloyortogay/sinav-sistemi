@@ -41,7 +41,6 @@ export async function POST(request) {
       return {
         type: 'audio',
         media: item.url,
-        caption: index === 0 ? captionText : '',
         parse_mode: 'Markdown',
         title: item.sectionName,
         performer: rawName
@@ -53,6 +52,18 @@ export async function POST(request) {
 
     for (const chatId of uniqueAdmins) {
       try {
+        // Önce Sınav Metnini Gönder
+        await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: chatId,
+            text: captionText,
+            parse_mode: 'Markdown'
+          })
+        });
+
+        // Ardından Medya Dosyalarını Gönder
         const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMediaGroup`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

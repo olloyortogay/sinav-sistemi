@@ -806,11 +806,6 @@ export default function ExamInterface() {
               {formatTime(totalElapsed)}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2 sm:px-3 py-1.5">
-            <span className="font-bold text-blue-800 text-xs sm:text-sm">
-              Varyant {activeVariant}
-            </span>
-          </div>
           <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
             {/* Avatar veya Provider Logosu */}
             {sessionUser?.rawData?.user_metadata?.avatar_url || sessionUser?.rawData?.photo_url ? (

@@ -43,7 +43,7 @@ export async function POST(request) {
 
     // 2. n8n ile Telegram İstihbaratı (Webhook)
     const n8nWebhookUrl = process.env.N8N_WEBHOOK_URL;
-    if (n8nWebhookUrl) {
+    if (n8nWebhookUrl && (variantNo === 'placement_exam' || variantNo === 'placement_test')) {
       try {
         await fetch(n8nWebhookUrl, {
           method: 'POST',
