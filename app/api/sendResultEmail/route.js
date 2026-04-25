@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 
 export async function POST(request) {
   try {
-    const { userName, userEmail, totalTime, resultId, score } = await request.json();
+    const { userName, userEmail, totalTime, resultId, score, level } = await request.json();
 
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not set — skipping email');
@@ -21,7 +21,7 @@ export async function POST(request) {
     const { error } = await resend.emails.send({
       from: 'Türk Dünyası <sinav@turkdunyasi.uz>',
       to:   [userEmail],
-      subject: score !== undefined ? `🎉 Sınav Sonucu ve Puanınız — ${userName}` : `🎉 Konuşma Sınavı Tamamlandı — ${userName}`,
+      subject: score !== undefined ? `🎉 Seviye Tespit Sınavı Sonucu — ${userName}` : `🎉 Konuşma Sınavı Tamamlandı — ${userName}`,
       html: `
         <!DOCTYPE html>
         <html lang="tr">
@@ -33,15 +33,21 @@ export async function POST(request) {
             <div style="background:linear-gradient(135deg,#dc2626,#991b1b);padding:40px 32px;text-align:center;border-bottom:4px solid #ef4444">
               <div style="display:inline-block;background:white;color:#dc2626;font-size:12px;font-weight:900;letter-spacing:2px;padding:6px 12px;border-radius:20px;margin-bottom:16px;">TÜRK DÜNYASI SINAV MERKEZİ</div>
               <h1 style="color:white;margin:0;font-size:26px;font-weight:800">Tebrikler, ${userName}! 🎉</h1>
-              <p style="color:#fecaca;margin-top:8px;font-size:16px">Türkçe Konuşma Sınavını Başarıyla Tamamladınız</p>
+              <p style="color:#fecaca;margin-top:8px;font-size:16px">
+                ${score !== undefined ? 'Türkçe Seviye Tespit Sınavını Başarıyla Tamamladınız' : 'Türkçe Konuşma Sınavını Başarıyla Tamamladınız'}
+              </p>
             </div>
 
             <!-- Stats -->
-            <div style="padding:36px 32px;display:flex;gap:16px;justify-content:center">
+            <div style="padding:36px 32px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
               ${score !== undefined ? `
-                <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
-                  <div style="font-size:32px;font-weight:900;color:#be123c">${score}</div>
+                <div style="background:#fff1f2;border:1px solid #fecdd3;border-radius:12px;padding:20px 24px;text-align:center;flex:1;min-width:120px">
+                  <div style="font-size:32px;font-weight:900;color:#be123c">${score} <span style="font-size:16px;color:#f43f5e">/ 100</span></div>
                   <div style="font-size:13px;color:#e11d48;margin-top:6px;font-weight:bold;text-transform:uppercase">Sınav Puanı</div>
+                </div>
+                <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:20px 24px;text-align:center;flex:1;min-width:120px">
+                  <div style="font-size:32px;font-weight:900;color:#1d4ed8">${level || 'A1'}</div>
+                  <div style="font-size:13px;color:#2563eb;margin-top:6px;font-weight:bold;text-transform:uppercase">CEFR Seviyesi</div>
                 </div>
               ` : `
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
@@ -49,8 +55,8 @@ export async function POST(request) {
                   <div style="font-size:13px;color:#15803d;margin-top:6px;font-weight:bold;text-transform:uppercase">Tamamlandı</div>
                 </div>
               `}
-              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px 32px;text-align:center;flex:1">
-                <div style="font-size:32px;font-weight:900;color:#334155">${timeStr}</div>
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px;text-align:center;flex:1;min-width:120px">
+                <div style="font-size:24px;font-weight:900;color:#334155;margin-top:6px">${timeStr}</div>
                 <div style="font-size:13px;color:#64748b;margin-top:6px;font-weight:bold;text-transform:uppercase">Toplam Süre</div>
               </div>
             </div>
