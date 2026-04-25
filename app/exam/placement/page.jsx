@@ -242,6 +242,7 @@ export default function PlacementExamPage() {
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
+      audioRef.current.load(); // Force load the new source
     }
   }, [currentIndex]);
 
@@ -883,7 +884,7 @@ export default function PlacementExamPage() {
             <div className="w-full bg-gray-50 border-b flex justify-center p-4">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img 
-                src={currentQuestion.mediaUrl} 
+                src={`${currentQuestion.mediaUrl}?v=${new Date().getTime()}`} 
                 alt="Soru Görseli" 
                 className="max-h-80 object-contain rounded-lg shadow-sm"
               />
@@ -897,7 +898,7 @@ export default function PlacementExamPage() {
               </div>
               <audio 
                 ref={audioRef} 
-                src={currentQuestion.mediaUrl} 
+                src={`${currentQuestion.mediaUrl}?v=${new Date().getTime()}`} 
                 className="hidden" 
                 onTimeUpdate={(e) => {
                   const curr = e.target.currentTime;
@@ -965,12 +966,7 @@ export default function PlacementExamPage() {
         </div>
 
         <div className="flex justify-between items-center mt-6 pb-10">
-          <button
-            onClick={() => finishAndUploadExam()}
-            className="text-sm font-bold text-red-600 bg-red-50 px-6 py-3 rounded-xl border border-red-200 hover:bg-red-100 transition shadow-sm"
-          >
-            🚧 Sınavı Hemen Bitir (Test)
-          </button>
+          <div></div>
           
           <button 
             onClick={handleNext}
