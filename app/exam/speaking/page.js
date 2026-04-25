@@ -28,6 +28,7 @@ export default function ExamInterface() {
   const [activeVariant, setActiveVariant] = useState('random');
   const [isOffline, setIsOffline] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [showExitModal, setShowExitModal] = useState(false);
 
   // ── Dark Mode Katmanı ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -55,7 +56,10 @@ export default function ExamInterface() {
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
-        const v = data.activeVariant || 'random';
+        let v = data.activeVariant || 'random';
+        if (v === 'random') {
+          v = Math.floor(Math.random() * 50) + 1;
+        }
         setActiveVariant(v);
         setQuestions(generateExam(v));
       })
@@ -758,6 +762,34 @@ export default function ExamInterface() {
           {t('examInternetLost')}
         </div>
       )}
+      {/* ── Çıkış Uyarı Modalı ────────────────────────────────────────────── */}
+      {showExitModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center border border-gray-100">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <svg className="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+            </div>
+            <h3 className="text-2xl font-black text-gray-800 mb-3">Sınavdan Çıkmak İstiyor musunuz?</h3>
+            <p className="text-gray-500 font-medium mb-8">
+              Eğer çıkış yaparsanız tüm ilerlemeniz ve verdiğiniz cevaplar tamamen iptal edilecek ve kaydedilmeyecektir.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setShowExitModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all active:scale-95"
+              >
+                İptal Et
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="flex-1 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-red-200 transition-all active:scale-95"
+              >
+                Evet, Çıkış Yap
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <header className="px-3 sm:px-6 py-2.5 sm:py-3 flex justify-between items-center border-b bg-white shadow-sm preserve-color">
         <h1 className="text-sm sm:text-xl font-semibold text-gray-800 leading-tight">
           <span className="hidden sm:inline">Turk dunyosi | </span>
@@ -772,6 +804,11 @@ export default function ExamInterface() {
             </svg>
             <span className="font-mono font-bold text-gray-700 text-sm tracking-wider">
               {formatTime(totalElapsed)}
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-2 sm:px-3 py-1.5">
+            <span className="font-bold text-blue-800 text-xs sm:text-sm">
+              Varyant {activeVariant}
             </span>
           </div>
           <div className="flex items-center gap-1.5 ml-0 sm:ml-2">
@@ -791,6 +828,12 @@ export default function ExamInterface() {
           </div>
           <button onClick={() => setIsDarkMode(!isDarkMode)} className="ml-1 sm:ml-2 p-1.5 rounded-full hover:bg-gray-100 text-gray-600 transition-colors" title="Karanlık / Aydınlık Tema">
             {isDarkMode ? '☀️' : '🌙'}
+          </button>
+          <button 
+            onClick={() => setShowExitModal(true)}
+            className="ml-1 sm:ml-2 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Sınavdan Çık
           </button>
           <a href="/profile" target="_blank" rel="noopener noreferrer" className="ml-1 sm:ml-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs sm:text-sm font-bold px-3 py-1.5 rounded-lg transition-colors">
             {t('examProfile')}
