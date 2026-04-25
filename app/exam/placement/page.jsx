@@ -366,20 +366,32 @@ export default function PlacementExamPage() {
 
     // Puan Hesaplama Modülü (1 Soru = 1 Puan, Toplam 100)
     let score = 0;
+    const detailedResults = []; // Hangi soruda hata yapıldığını tutmak için
+
     placementQuestions.forEach(q => {
       if (q.type === 'reading_group' || q.type === 'audio_group' || q.type === 'visual_group') {
         q.questions.forEach(subQ => {
-          if (answers[subQ.id] === subQ.correctAnswer) score += 1;
+          const isCorrect = answers[subQ.id] === subQ.correctAnswer;
+          if (isCorrect) score += 1;
+          detailedResults.push({ questionId: subQ.id, questionText: subQ.question, userAnswer: answers[subQ.id], correctAnswer: subQ.correctAnswer, isCorrect });
         });
       } else if (q.type === 'cloze_test') {
         q.segments.forEach(seg => {
-          if (seg.options && answers[seg.id] === seg.correctAnswer) score += 1;
+          if (seg.options) {
+            const isCorrect = answers[seg.id] === seg.correctAnswer;
+            if (isCorrect) score += 1;
+            detailedResults.push({ questionId: seg.id, questionText: `Boşluk Doldurma (${q.id})`, userAnswer: answers[seg.id], correctAnswer: seg.correctAnswer, isCorrect });
+          }
         });
       } else if (q.type === 'multiple_choice' || q.type === 'true_false') {
-        if (answers[q.id] === q.correctAnswer) score += 1;
+        const isCorrect = answers[q.id] === q.correctAnswer;
+        if (isCorrect) score += 1;
+        detailedResults.push({ questionId: q.id, questionText: q.question, userAnswer: answers[q.id], correctAnswer: q.correctAnswer, isCorrect });
       } else if (q.type === 'matching') {
         q.pairs.forEach((pair, idx) => {
-          if (answers[q.id] && answers[q.id][idx] === pair.a) score += 1;
+          const isCorrect = answers[q.id] && answers[q.id][idx] === pair.a;
+          if (isCorrect) score += 1;
+          detailedResults.push({ questionId: `${q.id}_${idx}`, questionText: pair.q, userAnswer: answers[q.id]?.[idx], correctAnswer: pair.a, isCorrect });
         });
       }
     });
@@ -406,7 +418,7 @@ export default function PlacementExamPage() {
         totalTime: totalElapsed,
         score: score,
         level: level,
-        sections: { answers }
+        sections: { answers, detailedResults }
       };
 
       const res = await fetch('/api/saveResult', {

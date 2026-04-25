@@ -164,11 +164,20 @@ export default function ProfilePage() {
                        <span className="text-xs font-bold text-gray-400 uppercase tracking-wider block mb-1">
                           {new Date(r.completed_at).toLocaleString('tr-TR')}
                        </span>
-                       <h4 className="font-bold text-gray-800">{t('examTitle')} ({t('profExamVariant')} {r.variant_no})</h4>
+                       <h4 className="font-bold text-gray-800">
+                         {r.variant_no === 'placement_exam' || r.variant_no === 'placement_test' 
+                           ? t('modPlacementTitle') || 'Seviye Tespit Sınavı'
+                           : `${t('examTitle')} (${t('profExamVariant')} ${r.variant_no})`}
+                       </h4>
                        <p className="text-sm text-gray-500 mt-1">{t('profDuration')}: {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}</p>
-                       {r.score !== null && r.score >= 70 && (
+                       {r.score !== null && r.score >= 70 && r.variant_no !== 'placement_exam' && r.variant_no !== 'placement_test' && (
                          <div className="mt-2 inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full border border-yellow-300 shadow-sm" title="Tebrikler!">
                            🏆 Oliy Daraja (Üstün Başarı)
+                         </div>
+                       )}
+                       {r.level && (
+                         <div className="mt-2 inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-full border border-blue-300 shadow-sm" title="Seviye">
+                           📈 {r.level} Seviyesi
                          </div>
                        )}
                     </div>
@@ -180,6 +189,35 @@ export default function ProfilePage() {
                        </div>
                     </div>
                   </div>
+                  
+                  {/* Detailed Results (Detaylar) */}
+                  {r.sections?.detailedResults && (
+                    <div className="mt-2 mb-6">
+                      <details className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <summary className="font-bold text-gray-700 cursor-pointer p-4 hover:bg-gray-50 transition outline-none">
+                          Tüm Soru Detayları (Hatalar ve Doğrular)
+                        </summary>
+                        <div className="p-4 bg-gray-50 space-y-3 max-h-[500px] overflow-y-auto border-t">
+                          {r.sections.detailedResults.map((detail, idx) => (
+                            <div key={idx} className={`p-3 rounded-xl border ${detail.isCorrect ? 'bg-green-50/50 border-green-200' : 'bg-red-50/50 border-red-200'}`}>
+                               <p className="font-bold text-gray-800 text-sm mb-2">{detail.questionText}</p>
+                               <div className="flex flex-col sm:flex-row sm:items-center gap-2 text-sm font-medium">
+                                  <span className={`px-2 py-1 rounded ${detail.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                    Sizin Cevabınız: {detail.userAnswer || 'Boş Bırakıldı'}
+                                  </span>
+                                  {!detail.isCorrect && (
+                                    <span className="px-2 py-1 rounded bg-gray-200 text-gray-800">
+                                      Doğru Cevap: {detail.correctAnswer}
+                                    </span>
+                                  )}
+                               </div>
+                            </div>
+                          ))}
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
                   {r.sections?.ai_feedback && (
                     <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mt-2 !mb-6 shadow-sm">
                       <div className="flex items-center gap-2 font-bold text-blue-800 mb-2 border-b border-blue-200 pb-2">

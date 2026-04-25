@@ -86,7 +86,7 @@ export const placementQuestions = [
       { q: "Mehmet kaç yaşında?", a: "35" },
       { q: "Serdar ve Mehmet kaç yıldır arkadaşlar?", a: "17" },
       { q: "Mehmet haftada kaç gün çalışıyor?", a: "3" },
-      { q: "Mehmet'in kaç tane çocuğu var?", a: "1" }
+      { q: "Mehmet'in kaç tane çocuğu var?", a: "2" }
     ]
   },
   {
