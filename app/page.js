@@ -8,7 +8,7 @@ import { useLanguage } from '../lib/LanguageContext';
 
 export default function LandingPage() {
   const [user, setUser] = useState(null);
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
 
   useEffect(() => {
     // Check initial session
@@ -29,6 +29,15 @@ export default function LandingPage() {
   }, []);
 
   const examModules = [
+    { 
+      id: 'placement', 
+      title: t('modPlacementTitle'), 
+      desc: t('modPlacementDesc'), 
+      icon: '🎯', 
+      active: true, 
+      path: '/exam/placement',
+      color: 'green'
+    },
     { 
       id: 'speaking', 
       title: t('modSpeakingTitle'), 
@@ -105,8 +114,11 @@ export default function LandingPage() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/exam/speaking" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-2xl transition shadow-xl shadow-blue-100 hover:scale-105 active:scale-95">
-              {t('btnStart')}
+            <Link href="/exam/placement" className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-2xl transition shadow-xl shadow-blue-100 hover:scale-105 active:scale-95">
+              {lang === 'uz' ? 'Daraja aniqlash imtihoni' : 'Seviye Tespit Sınavı'}
+            </Link>
+            <Link href="/exam/speaking" className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-10 rounded-2xl transition shadow-xl shadow-green-100 hover:scale-105 active:scale-95">
+              {lang === 'uz' ? '💡 Gapirish Sinoviga Kirish' : '💡 Konuşma Sınavına Gir'}
             </Link>
             <Link href="/profile" className="w-full sm:w-auto bg-white border-2 border-gray-100 hover:border-gray-200 text-gray-700 font-bold py-4 px-10 rounded-2xl transition hover:shadow-lg">
               {t('btnResults')}
@@ -123,7 +135,7 @@ export default function LandingPage() {
             <p className="text-gray-500 font-medium">{t('modulesDesc')}</p>
           </div>
           <div className="text-blue-600 font-bold text-sm bg-blue-50 px-4 py-2 rounded-xl">
-            {t('activeModuleNum')} 1
+            {t('activeModuleNum')} 2
           </div>
         </div>
 
