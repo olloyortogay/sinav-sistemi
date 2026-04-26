@@ -11,6 +11,7 @@ export default function ProfilePage() {
   const [sessionUser, setSessionUser] = useState(null);
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showClearModal, setShowClearModal] = useState(false);
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -82,6 +83,31 @@ export default function ProfilePage() {
     window.location.reload();
   };
 
+  const handleClearHistory = async () => {
+    setShowClearModal(false);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/deleteResults', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: sessionUser.email,
+          telegram_id: sessionUser.provider === 'telegram' || sessionUser.telegram_id ? sessionUser.id : null
+        })
+      });
+      const d = await res.json();
+      if (d.success) {
+        setResults([]);
+        alert('Sınav geçmişiniz başarıyla temizlendi.');
+      } else {
+        alert('Silme işlemi başarısız oldu: ' + d.error);
+      }
+    } catch (e) {
+      alert('Sunucu hatası: ' + e.message);
+    }
+    setLoading(false);
+  };
+
   if (loading) {
     return <div className="min-h-screen flex justify-center items-center font-sans">Yükleniyor...</div>;
   }
@@ -141,7 +167,6 @@ export default function ProfilePage() {
               <a 
                 href={`https://t.me/turkdunyasisinavbot?start=${sessionUser.email || sessionUser.id}`}
                 target="_blank"
-                onClick={() => setHasTelegramLinked(true)}
                 className="inline-flex items-center gap-2 bg-[#2AABEE] hover:bg-[#229ED9] text-white font-bold py-2.5 px-5 rounded-xl transition shadow-md"
               >
                 <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.01-.03.01-.14-.07-.19-.08-.05-.19-.02-.27 0-.11.03-1.84 1.18-5.2 3.45-.49.34-.94.51-1.34.5-.44-.01-1.28-.24-1.9-.45-.77-.25-1.38-.38-1.33-.8.02-.22.33-.45.92-.69 3.61-1.57 6.02-2.61 7.23-3.1 3.44-1.42 4.15-1.68 4.62-1.69.1 0 .33.02.46.12.11.08.13.19.14.28z"/></svg>
@@ -152,7 +177,17 @@ export default function ProfilePage() {
 
           {/* RESULTS */}
           <div>
-            <h2 className="text-xl font-bold text-gray-800 mb-4">{t('profHistory')}</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800">{t('profHistory')}</h2>
+              {results.length > 0 && (
+                <button 
+                  onClick={() => setShowClearModal(true)} 
+                  className="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm"
+                >
+                  🗑️ Geçmişi Temizle
+                </button>
+              )}
+            </div>
             {results.length === 0 ? (
               <p className="text-gray-500 bg-gray-50 p-6 text-center rounded-xl border border-dashed border-gray-300">{t('profNoExam')}</p>
             ) : (
@@ -165,9 +200,11 @@ export default function ProfilePage() {
                           {new Date(r.completed_at).toLocaleString('tr-TR')}
                        </span>
                        <h4 className="font-bold text-gray-800">
-                         {r.variant_no === 'placement_exam' || r.variant_no === 'placement_test' 
-                           ? t('modPlacementTitle') || 'Seviye Tespit Sınavı'
-                           : `${t('examTitle')} (${t('profExamVariant')} ${r.variant_no})`}
+                         {r.variant_no === 'writing_exam' || r.sections?.exam_type === 'writing'
+                           ? '✍️ Yozma Imtihoni (Yazma Sınavı)'
+                           : r.variant_no === 'placement_exam' || r.variant_no === 'placement_test' 
+                             ? t('modPlacementTitle') || 'Seviye Tespit Sınavı'
+                             : `${t('examTitle')} (${t('profExamVariant')} ${r.variant_no})`}
                        </h4>
                        <p className="text-sm text-gray-500 mt-1">{t('profDuration')}: {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}</p>
                        {r.score !== null && r.score >= 70 && r.variant_no !== 'placement_exam' && r.variant_no !== 'placement_test' && (
@@ -218,6 +255,31 @@ export default function ProfilePage() {
                     </div>
                   )}
 
+                  {/* Writing Results Details */}
+                  {(r.variant_no === 'writing_exam' || r.sections?.exam_type === 'writing') && r.sections && (
+                    <div className="mt-2 mb-6">
+                      <details className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                        <summary className="font-bold text-gray-700 cursor-pointer p-4 hover:bg-gray-50 transition outline-none">
+                          Yozgan Matnlaringiz (Cevaplarınız)
+                        </summary>
+                        <div className="p-4 bg-gray-50 space-y-4 border-t">
+                          <div className="bg-white p-4 rounded-xl border border-green-100">
+                            <h5 className="font-bold text-green-700 mb-2">🟢 Görev 1.1</h5>
+                            <p className="text-gray-700 text-sm whitespace-pre-wrap">{r.sections.task1 || '-'}</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-xl border border-blue-100">
+                            <h5 className="font-bold text-blue-700 mb-2">🔵 Görev 1.2</h5>
+                            <p className="text-gray-700 text-sm whitespace-pre-wrap">{r.sections.task2 || '-'}</p>
+                          </div>
+                          <div className="bg-white p-4 rounded-xl border border-purple-100">
+                            <h5 className="font-bold text-purple-700 mb-2">📝 Kompozisyon</h5>
+                            <p className="text-gray-700 text-sm whitespace-pre-wrap">{r.sections.kompozisyon || '-'}</p>
+                          </div>
+                        </div>
+                      </details>
+                    </div>
+                  )}
+
                   {r.sections?.ai_feedback && (
                     <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl mt-2 !mb-6 shadow-sm">
                       <div className="flex items-center gap-2 font-bold text-blue-800 mb-2 border-b border-blue-200 pb-2">
@@ -237,6 +299,37 @@ export default function ProfilePage() {
         </div>
         </div>
       </main>
+
+      {/* 🛑 Clear History Modal 🛑 */}
+      {showClearModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center border border-gray-100">
+            <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner">
+              <span className="text-4xl">⚠️</span>
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-3">
+              Geçmişi Temizle
+            </h3>
+            <p className="text-gray-500 mb-8 leading-relaxed font-medium">
+              Tüm sınav geçmişinizi silmek istediğinize emin misiniz? Bu işlem <strong className="text-red-500">geri alınamaz</strong> ve tüm verileriniz kalıcı olarak silinir.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <button
+                onClick={() => setShowClearModal(false)}
+                className="flex-1 px-6 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all active:scale-95"
+              >
+                İptal Et
+              </button>
+              <button
+                onClick={handleClearHistory}
+                className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-red-200 active:scale-95"
+              >
+                Evet, Sil
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

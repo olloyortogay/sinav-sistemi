@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 
 function getSupabase() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
   return createClient(url, key);
 }
@@ -31,10 +31,10 @@ async function writeStore(updates) {
   const nextStore = { ...current, ...updates };
 
   if (supabase) {
-    try {
-      await supabase.from('app_settings').upsert([{ id: 1, data: nextStore }]);
-    } catch (e) {
-      console.warn('Supabase write error:', e.message);
+    const { error } = await supabase.from('app_settings').upsert([{ id: 1, data: nextStore }]);
+    if (error) {
+      console.error('Supabase write error:', error);
+      throw error;
     }
   }
 }

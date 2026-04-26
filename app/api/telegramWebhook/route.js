@@ -133,17 +133,18 @@ export async function POST(request) {
       studentName = replyTo.audio.performer.trim();
     } else {
       const targetText = replyTo.caption || replyTo.text || '';
-      const nameMatch = targetText.match(/(?:Öğrenci Adı|Ism):\s*([^\n\r]+)/i);
+      // *Öğrenci:* veya Öğrenci Adı:
+      const nameMatch = targetText.match(/(?:Öğrenci Adı|Öğrenci|Ism)[\s\*]*:\s*\*?\s*([^\n\r*]+)/i);
       if (nameMatch) studentName = nameMatch[1].trim();
       
       // E-postayı mesajdan (caption) kurtarmaya çalışalım (db'de boş olma ihtimaline karşı)
-      const emailMatch = targetText.match(/(?:E-posta|Email):\s*([^\n\r]+)/i);
+      const emailMatch = targetText.match(/(?:E-posta|Email)[\s\*]*:\s*\*?\s*([^\n\r*]+)/i);
       if (emailMatch) captionEmail = emailMatch[1].trim().replace(/\\/g, ''); 
     }
 
     // Eğer audio performer varsa, caption'u yine de asıl mesajdan kontrol edelim (aynı mesajın caption'ı)
     if (!captionEmail && replyTo.caption) {
-       const emMatch = replyTo.caption.match(/(?:E-posta|Email):\s*([^\n\r]+)/i);
+       const emMatch = replyTo.caption.match(/(?:E-posta|Email)[\s\*]*:\s*\*?\s*([^\n\r*]+)/i);
        if (emMatch) captionEmail = emMatch[1].trim().replace(/\\/g, ''); 
     }
     

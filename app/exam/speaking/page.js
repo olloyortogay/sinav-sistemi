@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateExam } from '../../data/questions';
 import { supabase, getPublicUrl } from '../../../lib/supabase';
 import TelegramLoginWidget from '../../../components/TelegramLoginWidget';
+import Navbar from '../../../components/Navbar';
 import { useLanguage } from '../../../lib/LanguageContext';
 
 export default function ExamInterface() {
@@ -25,6 +26,9 @@ export default function ExamInterface() {
   const [fontSizeRatio, setFontSizeRatio] = useState(1);
   const [totalElapsed, setTotalElapsed] = useState(0);
   const [uploadError, setUploadError] = useState(null);
+
+  // Dinamik varyant tutucu
+  const [rawDynamicVariant, setRawDynamicVariant] = useState(null);
   const [activeVariant, setActiveVariant] = useState('random');
   const [isOffline, setIsOffline] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -57,11 +61,26 @@ export default function ExamInterface() {
       .then(res => res.json())
       .then(data => {
         let v = data.activeVariant || 'random';
-        if (v === 'random') {
-          v = Math.floor(Math.random() * 50) + 1;
+        if (v === 'dynamic') {
+          setActiveVariant('dynamic');
+          fetch('/api/generateDynamicVariant')
+            .then(res => res.json())
+            .then(d => {
+              if (d.success) {
+                setQuestions(d.questions);
+                setRawDynamicVariant(d.rawVariant);
+              } else {
+                setQuestions(generateExam('random'));
+              }
+            })
+            .catch(() => setQuestions(generateExam('random')));
+        } else {
+          if (v === 'random') {
+            v = Math.floor(Math.random() * 50) + 1;
+          }
+          setActiveVariant(v);
+          setQuestions(generateExam(v));
         }
-        setActiveVariant(v);
-        setQuestions(generateExam(v));
       })
       .catch(() => setQuestions(generateExam('random')));
 
@@ -420,6 +439,95 @@ export default function ExamInterface() {
     setAppState('EXAM');
   };
 
+  // HTML -> PDF blob for dynamic variant
+  const generateDynamicPDFBlob = async (variant) => {
+    const { jsPDF } = await import('jspdf');
+    const html2canvas = (await import('html2canvas')).default;
+
+    const container = document.createElement('div');
+    container.style.cssText = `
+      position: fixed; left: -9999px; top: 0;
+      width: 794px; background: white; font-family: Arial, sans-serif;
+      padding: 40px; box-sizing: border-box; color: #111;
+    `;
+
+    const imgSrc = variant.part1_2Scenario?.image_url;
+    const p2ImgSrc = variant.part2Scenario?.image_url;
+
+    container.innerHTML = `
+      <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; }
+        .header { background: #1B52B3; color: white; padding: 10px 20px; margin: -40px -40px 24px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 14px; margin: 0; }
+        .header .vno { font-size: 14px; font-weight: bold; }
+        .section-title { background: #E6F0FF; font-size: 13px; font-weight: bold; padding: 6px 10px; margin: 18px 0 10px; border-left: 4px solid #1B52B3; }
+        .question { display: flex; gap: 6px; margin: 6px 0; font-size: 11px; line-height: 1.5; }
+        .q-num { font-weight: bold; min-width: 20px; }
+        .q-text { flex: 1; }
+        .debate-title { background: #C8D8FA; padding: 8px 10px; font-size: 11px; font-weight: bold; border: 2px solid #1B52B3; margin-bottom: 0; }
+        .debate-table { width: 100%; border-collapse: collapse; border: 2px solid #1B52B3; }
+        .debate-table th { background: #1B52B3; color: white; padding: 6px; text-align: center; font-size: 11px; width: 50%; }
+        .debate-table td { padding: 6px 8px; font-size: 10px; vertical-align: top; width: 50%; border: 1px solid #1B52B3; line-height: 1.5; word-break: break-word; }
+        .scenario-img { max-width: 340px; max-height: 200px; object-fit: contain; display: block; margin: 8px auto 12px; border-radius: 6px; }
+        .bullets { list-style: disc; padding-left: 20px; margin: 6px 0; font-size: 11px; line-height: 1.6; }
+      </style>
+      <div class="header">
+        <h1>Türk Dünyası | Konuşma Sınavı</h1>
+        <span class="vno">Varyant (Dinamik)</span>
+      </div>
+      <div class="section-title">1. Bölüm — Günlük Yaşam Soruları</div>
+      ${variant.part1Questions.map((q, i) => `<div class="question"><span class="q-num">${i + 1}.</span><span class="q-text">${q.question}</span></div>`).join('')}
+      <div class="section-title">1.2. Bölüm — Fotoğraf Yorumlama</div>
+      ${imgSrc ? `<img class="scenario-img" src="${window.location.origin}${imgSrc.startsWith('/') ? '' : '/variants/'}${imgSrc}" crossorigin="anonymous"/>` : ''}
+      ${variant.part1_2Scenario.questions.map((q, i) => `<div class="question"><span class="q-num">${i + 4}.</span><span class="q-text">${q.q}</span></div>`).join('')}
+      <div class="section-title">2. Bölüm — Görsel & Tartışma</div>
+      ${p2ImgSrc ? `<img class="scenario-img" src="${window.location.origin}${p2ImgSrc.startsWith('/') ? '' : '/images/'}${p2ImgSrc}" crossorigin="anonymous"/>` : ''}
+      <ul class="bullets">${variant.part2Scenario.bullets.map(b => `<li>${b}</li>`).join('')}</ul>
+      <div class="section-title">3. Bölüm — Lehine / Aleyhine</div>
+      <div class="debate-title">${variant.part3Question.question}</div>
+      <table class="debate-table">
+        <thead><tr><th>Lehine</th><th>Aleyhine</th></tr></thead>
+        <tbody>
+          ${variant.part3Question.lists.lehine.map((l, i) => `<tr><td>• ${l}</td><td>• ${variant.part3Question.lists.aleyhine[i] || ''}</td></tr>`).join('')}
+        </tbody>
+      </table>
+    `;
+
+    document.body.appendChild(container);
+    await new Promise(r => setTimeout(r, 800));
+
+    try {
+      const canvas = await html2canvas(container, { scale: 2, useCORS: true, allowTaint: false, backgroundColor: '#ffffff', logging: false });
+      const imgData = canvas.toDataURL('image/jpeg', 0.92);
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pdfW = 210;
+      const pdfH = (canvas.height * pdfW) / canvas.width;
+      
+      const pageHeight = 297;
+      if (pdfH <= pageHeight) {
+        pdf.addImage(imgData, 'JPEG', 0, 0, pdfW, pdfH);
+      } else {
+        let yOffset = 0;
+        while (yOffset < canvas.height) {
+          const sliceHeight = Math.min((pageHeight * canvas.width) / pdfW, canvas.height - yOffset);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeight;
+          const ctx = sliceCanvas.getContext('2d');
+          ctx.drawImage(canvas, 0, -yOffset);
+          const sliceImg = sliceCanvas.toDataURL('image/jpeg', 0.92);
+          if (yOffset > 0) pdf.addPage();
+          pdf.addImage(sliceImg, 'JPEG', 0, 0, pdfW, (sliceHeight * pdfW) / canvas.width);
+          yOffset += sliceHeight;
+        }
+      }
+      return pdf.output('blob');
+    } finally {
+      document.body.removeChild(container);
+    }
+  };
+
   // ── Finish & Upload ────────────────────────────────────────────────────────
   // ── Finish & Upload (Jilet Gibi Yeni Mimari) ─────────────────────────────
   const finishAndUploadExam = async () => {
@@ -444,6 +552,23 @@ export default function ExamInterface() {
     const safeStudentName = cleanStr(rawUserName);
 
     try {
+      let dynamicPdfUrl = null;
+      if (activeVariant === 'dynamic' && rawDynamicVariant) {
+        try {
+          const pdfBlob = await generateDynamicPDFBlob(rawDynamicVariant);
+          const pdfFileName = `dynamic_exam_${safeStudentName}_${Date.now()}.pdf`;
+          const { data: pdfData, error: pdfError } = await supabase.storage
+            .from('assets')
+            .upload(pdfFileName, pdfBlob, { contentType: 'application/pdf', upsert: true });
+          
+          if (!pdfError && pdfData) {
+            dynamicPdfUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/assets/${pdfFileName}`;
+          }
+        } catch (pdfErr) {
+          console.error("PDF oluşturma/yükleme hatası:", pdfErr);
+        }
+      }
+
       const audioLinks = [];
 
       for (let i = 0; i < allRecordingsRef.current.length; i++) {
@@ -483,7 +608,8 @@ export default function ExamInterface() {
           provider: sessionUser?.provider || 'Bilinmiyor',
           telegramUsername: sessionUser?.telegramUsername || null,
           timeTaken: totalElapsed,
-          variantNo: activeVariant
+          variantNo: activeVariant,
+          dynamicPdfUrl: dynamicPdfUrl
         };
 
         const telegramRes = await fetch('/api/sendToTelegramBulk', {
@@ -684,12 +810,10 @@ export default function ExamInterface() {
     const secs = totalElapsed % 60;
     const timeStr = mins > 0 ? `${mins} dk ${secs} sn` : `${secs} sn`;
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-6 relative">
-        <a href="/" className="absolute top-6 right-6 font-bold text-green-700 hover:text-green-900 transition flex items-center gap-2 bg-white px-4 py-2 rounded-xl shadow-sm">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
-          {t('finishBackHome')}
-        </a>
-        <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-green-100">
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 to-emerald-100">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-6 relative">
+          <div className="bg-white p-12 rounded-3xl shadow-2xl max-w-lg w-full text-center border border-green-100">
           <div className="text-7xl mb-6">🎉</div>
           <h1 className="text-3xl font-extrabold text-gray-800 mb-2">{t('finishTitle')}</h1>
           <p className="text-gray-500 text-lg mb-8">
@@ -741,6 +865,7 @@ export default function ExamInterface() {
           )}
 
           <p className="text-gray-400 text-xs mt-6">{t('finishCloseStr')}</p>
+        </div>
         </div>
       </div>
     );

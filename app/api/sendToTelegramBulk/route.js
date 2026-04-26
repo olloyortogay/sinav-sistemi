@@ -33,7 +33,12 @@ export async function POST(request) {
     }
 
     const varNo = userInfo?.variantNo || 'Bilinmiyor';
-    const pdfUrl = userInfo?.variantNo !== 'random' ? `\n\n📄 *Varyant PDF:* [Varyant ${varNo}](https://turkdunyasi.uz/pdfs/variant_${varNo}.pdf)` : '';
+    let pdfUrl = '';
+    if (varNo === 'dynamic' && userInfo?.dynamicPdfUrl) {
+      pdfUrl = `\n\n📄 *Varyant PDF:* [Dinamik PDF İndir](${userInfo.dynamicPdfUrl})`;
+    } else if (varNo !== 'random' && varNo !== 'dynamic') {
+      pdfUrl = `\n\n📄 *Varyant PDF:* [Varyant ${varNo}](https://turkdunyasi.uz/pdfs/variant_${varNo}.pdf)`;
+    }
     
     const captionText = `🎓 *ÖĞRENCİ SINAV DOSYASI*\n\n📌 Öğrenci Adı: ${safeName}${emailInfo}${tgInfo}${providerInfo}${timeInfo}\n📂 Kayıt: ${audioLinks.length} Bölüm\n📝 Varyant: ${varNo}${pdfUrl}`;
 

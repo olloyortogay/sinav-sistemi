@@ -5,6 +5,7 @@ import * as Sentry from '@sentry/nextjs';
 import { placementQuestions } from '../../../src/data/placementQuestions';
 import { supabase, getPublicUrl } from '../../../lib/supabase';
 import TelegramLoginWidget from '../../../components/TelegramLoginWidget';
+import Navbar from '../../../components/Navbar';
 
 export default function PlacementExamPage() {
   const router = useRouter();
@@ -725,8 +726,10 @@ export default function PlacementExamPage() {
   // ── FINISHED ──────────────────────────────────────────────────────────────
   if (appState === 'FINISHED') {
     return (
-      <div className="min-h-screen bg-[#FDFDFD] flex items-center justify-center p-6 font-sans">
-        <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-gray-100 max-w-2xl w-full text-center relative overflow-hidden">
+      <div className="min-h-screen flex flex-col bg-[#FDFDFD] font-sans">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="bg-white p-10 rounded-[3rem] shadow-2xl border border-gray-100 max-w-2xl w-full text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-40 bg-gradient-to-br from-blue-500 to-purple-600 -z-10 opacity-10"></div>
           
           <div className="animate-fade-in relative z-10">
@@ -799,6 +802,7 @@ export default function PlacementExamPage() {
               animation: fade-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
             }
           `}</style>
+        </div>
         </div>
       </div>
     );
