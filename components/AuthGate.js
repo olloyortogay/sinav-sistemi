@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import TelegramLoginWidget from './TelegramLoginWidget';
-import { notifyFirstLogin } from '../lib/useAuth';
+import { processAuthSession, buildGoogleUser, upsertAndEnrich } from '../lib/useAuth';
+import { useRouter } from 'next/navigation';
 
 /**
  * Merkezi giriş bileşeni — Google OAuth + Telegram Login.
@@ -14,6 +15,7 @@ import { notifyFirstLogin } from '../lib/useAuth';
  *   subtitle         — Alt başlık metni
  */
 export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
+  const router = useRouter();
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -21,9 +23,7 @@ export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const userObj = buildGoogleUser(session.user);
-        const enriched = await upsertAndEnrich(userObj);
-        notifyFirstLogin(enriched);
+        const enriched = await processAuthSession(session.user, null, null);
         onSuccess(enriched);
       }
     });
@@ -34,9 +34,7 @@ export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
     setOauthLoading(true);
     setError(null);
     try {
-      const callbackUrl = redirectTo
-        ? `${window.location.origin}${redirectTo}`
-        : window.location.href;
+      const callbackUrl = window.location.origin + '/login'; // Kesin kural: /login rotasına dön
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: callbackUrl },
@@ -58,9 +56,10 @@ export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
       avatar: telegramUser.photo_url || null,
       rawData: telegramUser,
     };
+    
+    // Telegram için manuel zenginleştirme (processAuthSession Google içindir)
     const enriched = await upsertAndEnrich(userObj);
     localStorage.setItem('tg_session', JSON.stringify(enriched));
-    notifyFirstLogin(enriched);
     onSuccess(enriched);
   };
 
@@ -171,45 +170,5 @@ export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
   );
 }
 
-// ── Yardımcı Fonksiyonlar ────────────────────────────────────────────────────────────
+// Yardımcı fonksiyonlar artık lib/useAuth.js üzerinden merkezi olarak yönetilmektedir.
 
-function buildGoogleUser(supabaseUser) {
-  return {
-    provider: 'google',
-    id: supabaseUser.id,
-    name: supabaseUser.user_metadata?.full_name || supabaseUser.email,
-    email: supabaseUser.email,
-    avatar: supabaseUser.user_metadata?.avatar_url || null,
-    rawData: supabaseUser,
-  };
-}
-
-/**
- * upsertAndEnrich:
- * 1. /api/upsertStudent API'sini çağırır (students tablosunu günceller/oluşturur)
- * 2. Dönen student_id'yi user objesine ekler
- * 3. Hata olursa sessizce log'lar, user objesini olduğu gibi döndürür
- */
-async function upsertAndEnrich(user) {
-  try {
-    const res = await fetch('/api/upsertStudent', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider:          user.provider,
-        id:                user.id,
-        name:              user.name,
-        email:             user.email || null,
-        telegramUsername:  user.telegramUsername || null,
-        avatar:            user.avatar || null,
-      }),
-    });
-    const json = await res.json();
-    if (json.success && json.student_id) {
-      return { ...user, student_id: json.student_id };
-    }
-  } catch (err) {
-    console.error('upsertAndEnrich error:', err);
-  }
-  return user; // Hata durumunda orijinal user'i döndür
-}
