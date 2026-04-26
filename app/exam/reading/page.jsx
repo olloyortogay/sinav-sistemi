@@ -1,15 +1,16 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import AuthGate from '../../../components/AuthGate';
 import Navbar from '../../../components/Navbar';
 import ReadingSection from '../../../components/ReadingSection';
 import { supabase } from '../../../lib/supabase';
 
 // Geçici mod: local test için kayıt zorunluluğunu kaldırır.
-const TEMP_ALLOW_GUEST_READING = true;
+const TEMP_ALLOW_GUEST_READING = false;
 
 export default function ReadingExamPage() {
-  const [appState, setAppState] = useState('READY');
+  const [appState, setAppState] = useState('LOGIN');
   const [sessionUser, setSessionUser] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState(null);
@@ -51,6 +52,11 @@ export default function ReadingExamPage() {
     };
     init();
   }, []);
+
+  const onAuthSuccess = (user) => {
+    setSessionUser(user);
+    setAppState('READY');
+  };
 
   const onStart = () => {
     startRef.current = Date.now();
@@ -129,6 +135,17 @@ export default function ReadingExamPage() {
       setUploading(false);
     }
   };
+
+  if (appState === 'LOGIN') {
+    return (
+      <AuthGate
+        onSuccess={onAuthSuccess}
+        redirectTo="/exam/reading"
+        title="Okuma Sınavı"
+        subtitle="Okuma sınavına başlamak için giriş yapın"
+      />
+    );
+  }
 
   if (appState === 'READY') {
     return (
