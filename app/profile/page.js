@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
-import TelegramLoginWidget from '../../components/TelegramLoginWidget';
 import Navbar from '../../components/Navbar';
+import CustomAlertModal from '../../components/CustomAlertModal';
 import { useLanguage } from '../../lib/LanguageContext';
 import Link from 'next/link';
 import React from 'react';
@@ -12,6 +12,7 @@ export default function ProfilePage() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showClearModal, setShowClearModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: '', message: '', type: 'warning' });
   const { t } = useLanguage();
 
   useEffect(() => {
@@ -98,12 +99,12 @@ export default function ProfilePage() {
       const d = await res.json();
       if (d.success) {
         setResults([]);
-        alert('Sınav geçmişiniz başarıyla temizlendi.');
+        setAlertConfig({ isOpen: true, title: 'Başarılı', message: 'Sınav geçmişiniz başarıyla temizlendi.', type: 'success' });
       } else {
-        alert('Silme işlemi başarısız oldu: ' + d.error);
+        setAlertConfig({ isOpen: true, title: 'Hata', message: 'Silme işlemi başarısız oldu: ' + d.error, type: 'error' });
       }
     } catch (e) {
-      alert('Sunucu hatası: ' + e.message);
+      setAlertConfig({ isOpen: true, title: 'Sunucu Hatası', message: e.message, type: 'error' });
     }
     setLoading(false);
   };
@@ -330,6 +331,15 @@ export default function ProfilePage() {
           </div>
         </div>
       )}
+
+      {/* Global Alerts */}
+      <CustomAlertModal
+        isOpen={alertConfig.isOpen}
+        title={alertConfig.title}
+        message={alertConfig.message}
+        type={alertConfig.type}
+        onClose={() => setAlertConfig(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 }

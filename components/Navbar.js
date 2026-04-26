@@ -89,7 +89,7 @@ export default function Navbar() {
                 </button>
               </div>
             ) : (
-              <Link href="/exam/speaking" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-bold transition shadow-md shadow-blue-100">
+              <Link href="/login" className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-bold transition shadow-md shadow-blue-100">
                 {t('login')}
               </Link>
             )}

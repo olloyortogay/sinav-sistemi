@@ -2,8 +2,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { generateExam } from '../../data/questions';
 import { supabase, getPublicUrl } from '../../../lib/supabase';
-import TelegramLoginWidget from '../../../components/TelegramLoginWidget';
+import AuthGate from '../../../components/AuthGate';
 import Navbar from '../../../components/Navbar';
+import CustomAlertModal from '../../../components/CustomAlertModal';
 import { useLanguage } from '../../../lib/LanguageContext';
 
 export default function ExamInterface() {
@@ -33,6 +34,8 @@ export default function ExamInterface() {
   const [isOffline, setIsOffline] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [showExitModal, setShowExitModal] = useState(false);
+  const [alertConfig, setAlertConfig] = useState({ isOpen: false, title: '', message: '', type: 'warning' });
+  const [micOk, setMicOk] = useState(false);
 
   // ── Dark Mode Katmanı ──────────────────────────────────────────────────────
   useEffect(() => {
@@ -43,7 +46,7 @@ export default function ExamInterface() {
     }
   }, [isDarkMode]);
 
-  // ── Refs ───────────────────────────────────────────────────────────────────
+  // ── Refs ─────────────────────────────────────────────────────────────────────
   const mediaRecorderRef = useRef(null);
   const audioChunksRef = useRef([]);
   const allRecordingsRef = useRef([]);
@@ -53,10 +56,9 @@ export default function ExamInterface() {
   const animationRef = useRef(null);
   const totalTimerRef = useRef(null);
 
-
-  // ── Initialization (Auth & Variant) ─────────────────────────────────────────
+  // ── Initialization (Variant + Auth) ─────────────────────────────────
   useEffect(() => {
-    // 1. Backendden ayarları al
+    // 1. Varyant ayarını yükle
     fetch('/api/settings')
       .then(res => res.json())
       .then(data => {
@@ -66,134 +68,57 @@ export default function ExamInterface() {
           fetch('/api/generateDynamicVariant')
             .then(res => res.json())
             .then(d => {
-              if (d.success) {
-                setQuestions(d.questions);
-                setRawDynamicVariant(d.rawVariant);
-              } else {
-                setQuestions(generateExam('random'));
-              }
+              if (d.success) { setQuestions(d.questions); setRawDynamicVariant(d.rawVariant); }
+              else setQuestions(generateExam('random'));
             })
             .catch(() => setQuestions(generateExam('random')));
         } else {
-          if (v === 'random') {
-            v = Math.floor(Math.random() * 50) + 1;
-          }
+          if (v === 'random') v = Math.floor(Math.random() * 50) + 1;
           setActiveVariant(v);
           setQuestions(generateExam(v));
         }
       })
       .catch(() => setQuestions(generateExam('random')));
 
-    // 2. Supabase Google (OAuth) Oturum Kontrolü
-    const checkSupabaseSession = async () => {
+    // 2. Oturum kontrolü
+    const checkSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        isPreloadedAuthRef.current = true; // Zaten giriş yapılmış!
+        isPreloadedAuthRef.current = true;
         setSessionUser({
           provider: 'google',
           id: session.user.id,
           name: session.user.user_metadata?.full_name || session.user.email,
           email: session.user.email,
-          rawData: session.user
+          rawData: session.user,
         });
+        setAppState('MIC_CHECK');
+        return;
       }
+      try {
+        const raw = localStorage.getItem('tg_session');
+        if (raw) {
+          isPreloadedAuthRef.current = true;
+          setSessionUser(JSON.parse(raw));
+          setAppState('MIC_CHECK');
+        }
+      } catch (_) {}
     };
-    checkSupabaseSession();
-
-    // Oturum değişikliklerini dinle
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setSessionUser({
-          provider: 'google',
-          id: session.user.id,
-          name: session.user.user_metadata?.full_name || session.user.email,
-          email: session.user.email,
-          rawData: session.user
-        });
-      }
-    });
-
-    // 3. Telegram Local Storage kontrolü (sayfa yenilenince Telegram oturumu kalsın diye)
-    try {
-      const tgUser = localStorage.getItem('tg_session');
-      if (tgUser) {
-        isPreloadedAuthRef.current = true; // Zaten giriş yapılmış!
-        setSessionUser(JSON.parse(tgUser));
-      }
-    } catch (e) { }
-
-    return () => subscription.unsubscribe();
+    checkSession();
   }, []);
 
-  // Giriş akışı kontrolü: zaten giriş yapılmışsa MIC_CHECK, yeni giriş yapıldıysa dashboard
-  useEffect(() => {
-    if (!sessionUser || appState !== 'LOGIN') return;
-
-    const notifyKey = `notified_login_v2_${sessionUser.id}`;
-    const alreadyNotified = localStorage.getItem(notifyKey);
-
-    if (isPreloadedAuthRef.current) {
-      // Kullanıcı zaten giriş yapmış, sınavı başlatmak için sayfaya geldi → MIC_CHECK'e geç
-      setAppState('MIC_CHECK');
-    } else {
-      // Kullanıcı az önce giriş yaptı → bildirim gönder, sonra dashboard'a yönlendir
-      if (!alreadyNotified) {
-        localStorage.setItem(notifyKey, 'true');
-        fetch('/api/notifyLogin', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user: sessionUser, provider: sessionUser.provider })
-        })
-          .catch(() => {})
-          .finally(() => {
-            window.location.href = '/';
-          });
-      } else {
-        window.location.href = '/';
-      }
-    }
-  }, [sessionUser, appState]);
-
-
-  // ── Auth Handlers ────────────────────────────────────────────────────────
-  const handleGoogleLogin = async () => {
-    // Supabase ile Google login başlat
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: typeof window !== 'undefined' ? window.location.origin : ''
-      }
-    });
-    if (error) alert("Google ile giriş yapılamadı: " + error.message);
-  };
-
-  const handleTelegramAuth = (telegramUser) => {
-    // telegramUser = { id, first_name, username, hash, ... }
-    const userObj = {
-      provider: 'telegram',
-      id: telegramUser.id,
-      name: telegramUser.first_name + (telegramUser.last_name ? ' ' + telegramUser.last_name : ''),
-      email: null, // Sahte email yok
-      telegramUsername: telegramUser.username ? '@' + telegramUser.username : null,
-      rawData: telegramUser
-    };
-    setSessionUser(userObj);
-    // Sayfa yenilenmesine karşı tarayıcıya kaydet
-    localStorage.setItem('tg_session', JSON.stringify(userObj));
-    
-    // Yönlendirme (window.location.href) veya bildirim (notifyLogin) BURADAN KALDIRILDI.
-    // Çünkü useEffect içerisinde hem state tespiti yapılıp bildirim atılacak, hem de MIC_CHECK'e geçecek.
+  // ── Auth Handlers ──────────────────────────────────────────────────────
+  const handleAuthSuccess = (user) => {
+    setSessionUser(user);
+    setAppState('MIC_CHECK');
   };
 
   const handleLogout = async () => {
-    if (sessionUser?.provider === 'google') {
-      await supabase.auth.signOut();
-    }
+    if (sessionUser?.provider === 'google') await supabase.auth.signOut();
     localStorage.removeItem('tg_session');
     setSessionUser(null);
     setAppState('LOGIN');
   };
-
 
   const currentItem = questions.length > 0 ? questions[currentQuestionIndex] : null;
   const activeSection = (() => {
@@ -269,7 +194,7 @@ export default function ExamInterface() {
         e.key === 'F12'
       ) {
         e.preventDefault();
-        alert("⚠️ BU SAYFADA KOPYALAMA VE KAYNAK KODU GÖRÜNTÜLEME YASAKTIR!");
+        setAlertConfig({ isOpen: true, title: 'Uyarı', message: "⚠️ BU SAYFADA KOPYALAMA VE KAYNAK KODU GÖRÜNTÜLEME YASAKTIR!", type: 'error' });
       }
     };
 
@@ -322,9 +247,10 @@ export default function ExamInterface() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       stream.getTracks().forEach(t => t.stop());
+      setMicOk(true);
       setAppState('GATEWAY');
-    } catch (_) {
-      alert('Mikrofon izni alınamadı!');
+    } catch (err) {
+      setAlertConfig({ isOpen: true, title: 'Mikrofon Hatası', message: 'Mikrofon izni alınamadı!', type: 'error' });
     }
   };
 
@@ -652,6 +578,8 @@ export default function ExamInterface() {
             userName: rawUserName,
             userEmail: userEmail,
             telegramAuthId: sessionUser?.provider === 'telegram' ? sessionUser.id : null,
+            telegramUsername: sessionUser?.telegramUsername || null,
+            student_id: sessionUser?.student_id || null,
             variantNo: activeVariant,
             totalTime: Number(totalElapsed),
           }),
@@ -691,53 +619,12 @@ export default function ExamInterface() {
   // ── LOGIN ──────────────────────────────────────────────────────────────────
   if (appState === 'LOGIN') {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 sm:p-6">
-        <div className="bg-white p-6 sm:p-10 rounded-3xl shadow-2xl w-full max-w-md border border-blue-100">
-          <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/images/logo.webp" alt="Türk Dünyası" className="w-24 h-24 object-contain" />
-            </div>
-            <h1 className="text-3xl font-extrabold text-gray-800 mb-1">{t('loginHeader1')}</h1>
-            <p className="text-blue-600 font-semibold">{t('loginHeader2')}</p>
-            <p className="text-sm text-gray-400 mt-1">{t('loginHeader3')}</p>
-          </div>
-
-          {/* Auth Options */}
-          <div className="space-y-4 flex flex-col items-center">
-            {/* Supabase Google Auth Button */}
-            <button
-              onClick={handleGoogleLogin}
-              className="w-full flex items-center justify-center gap-3 bg-white border border-gray-300 hover:bg-gray-50 active:scale-95 text-gray-700 font-semibold py-3 px-4 rounded-xl text-lg transition-all shadow-sm"
-            >
-              <svg className="w-6 h-6" viewBox="0 0 24 24">
-                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                <path fill="none" d="M1 1h22v22H1z" />
-              </svg>
-              {t('loginGoogle')}
-            </button>
-
-            <div className="w-full flex items-center gap-3 my-4 opacity-70">
-              <div className="h-px bg-gray-300 flex-1"></div>
-              <span className="text-gray-400 text-sm font-semibold uppercase">{t('loginOr')}</span>
-              <div className="h-px bg-gray-300 flex-1"></div>
-            </div>
-
-            {/* Telegram Login Widget */}
-            <TelegramLoginWidget
-              botName={process.env.NEXT_PUBLIC_TELEGRAM_BOT_NAME || 'turkdunyasi_bot'}
-              onAuth={handleTelegramAuth}
-            />
-
-            <p className="text-xs text-gray-400 mt-4 text-center px-4">
-              {t('loginDisclaimer')}
-            </p>
-          </div>
-        </div>
-      </div>
+      <AuthGate
+        onSuccess={handleAuthSuccess}
+        redirectTo="/exam/speaking"
+        title="Konuşma Sınavı"
+        subtitle="Türk Dünyası Türkçe Konuşma Yeterlilik Sınavı"
+      />
     );
   }
 
