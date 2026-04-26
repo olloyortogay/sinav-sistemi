@@ -32,6 +32,8 @@ export async function POST(request) {
     const examTitle =
       resolvedExamType === 'listening'
         ? 'Dinleme Sınavı'
+        : resolvedExamType === 'reading'
+          ? 'Okuma Sınavı'
         : resolvedExamType === 'placement'
           ? 'Seviye Tespit Sınavı'
           : 'Konuşma Sınavı';

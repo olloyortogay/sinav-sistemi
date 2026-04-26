@@ -9,7 +9,7 @@ import { listeningAnswerKey } from '../../../src/data/listeningQuestions';
 
 // Geçici mod: local test için kayıt zorunluluğunu kaldırır.
 // Test bitince false yaparak eski davranışı geri alabilirsiniz.
-const TEMP_ALLOW_GUEST_LISTENING = true;
+const TEMP_ALLOW_GUEST_LISTENING = false;
 
 function extractChoiceLetter(value) {
   if (value === null || value === undefined) return null;

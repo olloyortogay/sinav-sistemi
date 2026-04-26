@@ -19,6 +19,16 @@ async function sendTelegramMessageStrict(botToken, payload, context) {
   }
 }
 
+async function sendTelegramMessageBestEffort(botToken, payload, context) {
+  try {
+    await sendTelegramMessageStrict(botToken, payload, context);
+    return { ok: true };
+  } catch (err) {
+    console.error(`saveResult telegram best-effort failed (${context}):`, err?.message || err);
+    return { ok: false, error: err?.message || String(err) };
+  }
+}
+
 // Basit In-Memory Rate Limiter (10 Saniye)
 const rateLimitMap = new Map();
 
@@ -78,24 +88,28 @@ export async function POST(request) {
       const levelText = level || 'Belirlenmedi';
       const correctCount = sections?.scoreSummary?.correctCount;
       const totalQuestionCount = sections?.scoreSummary?.totalQuestionCount;
+      const wrongCount =
+        correctCount !== undefined && totalQuestionCount !== undefined
+          ? Math.max(Number(totalQuestionCount) - Number(correctCount), 0)
+          : null;
       const accuracyText =
         correctCount !== undefined && totalQuestionCount !== undefined
-          ? `📊 Dogru: ${correctCount}/${totalQuestionCount}\n`
+          ? `📊 Doğru: ${correctCount}/${totalQuestionCount} | Yanlış: ${wrongCount}\n`
           : '';
       const adminText =
-        `📌 *Yeni sinav sonucu kaydedildi*\n\n` +
-        `👤 Ogrenci: ${userName || 'Bilinmeyen'}\n` +
-        `🧩 Sinav: ${variantNo || 'bilinmiyor'}\n` +
+        `📌 Yeni sınav sonucu kaydedildi\n\n` +
+        `👤 Öğrenci: ${userName || 'Bilinmeyen'}\n` +
+        `🧩 Sınav: ${variantNo || 'bilinmiyor'}\n` +
         accuracyText +
         `🏆 Puan: ${scoreText}\n` +
         `🎯 Seviye: ${levelText}\n` +
-        `⏱️ Sure: ${mins} dk ${secs} sn\n` +
-        `🆔 Result ID: \`${generatedId}\``;
+        `⏱️ Süre: ${mins} dk ${secs} sn\n` +
+        `🆔 Result ID: ${generatedId}`;
 
       for (const chatId of adminIds) {
-        await sendTelegramMessageStrict(
+        await sendTelegramMessageBestEffort(
           BOT_TOKEN,
-          { chat_id: chatId, text: adminText, parse_mode: 'Markdown' },
+          { chat_id: chatId, text: adminText },
           `admin-${chatId}`
         );
       }
@@ -107,7 +121,7 @@ export async function POST(request) {
           (accuracyText ? `${accuracyText}` : '') +
           `Durum: ${scoreText === 'Beklemede' ? 'Degerlendirme bekleniyor' : `Puaniniz: ${scoreText} | Seviyeniz: ${levelText}`}\n` +
           `Profil: https://sinav.turkdunyasi.uz/profile`;
-        await sendTelegramMessageStrict(
+        await sendTelegramMessageBestEffort(
           BOT_TOKEN,
           { chat_id: String(telegramAuthId), text: studentText },
           `student-${telegramAuthId}`

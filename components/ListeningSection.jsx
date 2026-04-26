@@ -270,8 +270,8 @@ export default function ListeningSection({ onSubmit, disabled = false }) {
       <div className="pb-10">
         <button
           onClick={handleSubmit}
-          disabled={!audioEnded || !allAnswered || disabled}
-          className={`w-full py-4 rounded-2xl font-black text-white ${!audioEnded || !allAnswered || disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
+          disabled={!allAnswered || disabled}
+          className={`w-full py-4 rounded-2xl font-black text-white ${!allAnswered || disabled ? 'bg-gray-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'}`}
         >
           Dinleme Sınavını Bitir
         </button>
