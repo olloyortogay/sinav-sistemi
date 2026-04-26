@@ -20,8 +20,7 @@ export async function POST(request) {
     adminIds.push('1096600852');
     const uniqueAdmins = [...new Set(adminIds)].filter(Boolean);
 
-    let hasSuccess = false;
-    let lastErrorDesc = '';
+    const failedChats = [];
 
     const safeSectionName = (sectionName || 'Soru').replace(/[^a-zA-Z0-9 ığüşöçİĞÜŞÖÇ]/g, "");
     const safeStudentName = (studentName || 'Ogrenci').replace(/[^a-zA-Z0-9 ığüşöçİĞÜŞÖÇ]/g, "");
@@ -43,22 +42,22 @@ export async function POST(request) {
         });
 
         const result = await telegramResponse.json();
-        if (result.ok) {
-          hasSuccess = true;
-        } else {
-          lastErrorDesc = result.description;
+        if (!telegramResponse.ok || !result?.ok) {
+          const reason = result?.description || `HTTP_${telegramResponse.status}`;
+          failedChats.push({ chatId, reason });
           console.error(`Telegram API Hatası (${chatId}):`, result.description);
         }
       } catch (err) {
+        failedChats.push({ chatId, reason: err.message });
         console.error(`Telegram fetch hatası (${chatId}):`, err);
       }
     }
 
-    if (hasSuccess) {
-      return ok({ message: "Telegram'a başarıyla gönderildi" });
-    } else {
-      throw new Error(lastErrorDesc || "Telegram gönderimi tüm adminler için başarısız oldu.");
+    if (failedChats.length > 0) {
+      const reason = failedChats.map(item => `${item.chatId}:${item.reason}`).join(', ');
+      throw new Error(`Telegram gönderimi başarısız: ${reason}`);
     }
+    return ok({ message: "Telegram'a başarıyla gönderildi" });
 
   } catch (error) {
     console.error("Backend Hatası:", error);

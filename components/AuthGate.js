@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import TelegramLoginWidget from './TelegramLoginWidget';
-import { processAuthSession, upsertAndEnrich } from '../lib/useAuth';
+import { notifyFirstLogin, processAuthSession, upsertAndEnrich } from '../lib/useAuth';
 
 /**
  * Merkezi giriş bileşeni — Google OAuth + Telegram Login.
@@ -60,6 +60,7 @@ export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
     
     // Telegram için manuel zenginleştirme (processAuthSession Google içindir)
     const enriched = await upsertAndEnrich(userObj);
+    notifyFirstLogin(enriched);
     localStorage.setItem('tg_session', JSON.stringify(enriched));
     onSuccess(enriched);
   };

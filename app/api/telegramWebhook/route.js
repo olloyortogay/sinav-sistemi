@@ -1,5 +1,29 @@
 import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
+async function sendTelegramMessageStrict(botToken, payload, context) {
+  if (!botToken) {
+    const msg = `${context}: TELEGRAM_BOT_TOKEN missing`;
+    console.error(msg);
+    throw new Error(msg);
+  }
+
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const result = await response.json();
+  if (!response.ok || !result?.ok) {
+    const reason = result?.description || `HTTP_${response.status}`;
+    console.error(`${context}: Telegram send failed`, {
+      status: response.status,
+      reason,
+      payload
+    });
+    throw new Error(`${context}: ${reason}`);
+  }
+}
+
 // E-posta doğrudan Resend API ile gönder (kendi API'sine HTTP çağrısı değil)
 async function sendEmailViaResend({ userName, userEmail, totalTime, score }) {
   const RESEND_API_KEY = process.env.RESEND_API_KEY;
@@ -96,20 +120,24 @@ export async function POST(request) {
         const userIdOrEmail = parts[1].trim();
         const supabase = createServiceRoleSupabase();
         if (supabase) {
-          await supabase.from('exam_results')
+          const { error: linkError } = await supabase.from('exam_results')
             .update({ telegram_chat_id: String(message.chat.id) })
             .or(`user_email.eq.${userIdOrEmail},id.eq.${userIdOrEmail}`);
-            
+          if (linkError) {
+            console.error('Telegram link DB update failed:', linkError);
+            return fail('TELEGRAM_LINK_DB_FAILED', linkError.message, 500);
+          }
+
           const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-          await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+          await sendTelegramMessageStrict(
+            TELEGRAM_BOT_TOKEN,
+            {
               chat_id: message.chat.id, 
               text: `✅ *Telegram hisobingiz muvaffaqiyatli ulandi!*\n\nSinov natijalaringiz va xabarnomalar endi shu bot orqali yuboriladi.`, 
               parse_mode: 'Markdown' 
-            })
-          });
+            },
+            'telegramWebhook /start confirm'
+          );
           return ok({ ok: true, reason: 'Account linked' });
         }
       }
@@ -163,15 +191,15 @@ export async function POST(request) {
       console.log('Student not found:', studentName, '| DB error:', error?.message);
       // Admin'e bilgi ver
       const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+      await sendTelegramMessageStrict(
+        TELEGRAM_BOT_TOKEN,
+        {
           chat_id: message.chat.id, 
           text: `❌ Öğrenci bulunamadı: "${studentName}"\nDB'de kayıt yok veya isim uyuşmuyor.`,
           reply_to_message_id: message.message_id
-        })
-      });
+        },
+        'telegramWebhook student-not-found'
+      );
       return ok({ ok: true, reason: 'Not found in DB' });
     }
     
@@ -195,11 +223,11 @@ export async function POST(request) {
       const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
       const profileUrl = 'https://sinav.turkdunyasi.uz/profile';
       const msg = `🎉 *Sinov natijangiz e'lon qilindi!*\n\nSalom ${targetExam.user_name}, gapirish sinovingiz baholandi.\n\n🏆 *Berilgan ball:* ${score}\n\nBatafsil natijalar uchun [Shaxsiy kabinetingizni](${profileUrl}) ko'ring.`;
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: targetExam.telegram_chat_id, text: msg, parse_mode: 'Markdown' })
-      }).catch(e => console.log('TG student notify err:', e.message));
+      await sendTelegramMessageStrict(
+        TELEGRAM_BOT_TOKEN,
+        { chat_id: targetExam.telegram_chat_id, text: msg, parse_mode: 'Markdown' },
+        'telegramWebhook student-notify'
+      );
     }
 
     // E-posta doğrudan Resend ile gönder (db'de yoksa ama mesajda varsa oradan al)
@@ -222,15 +250,15 @@ export async function POST(request) {
     // Admin'e onay mesajı
     const TELEGRAM_BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
     const foundEmail = emailToSend ? `✉️ ${emailToSend}` : '(email yok)';
-    await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
+    await sendTelegramMessageStrict(
+      TELEGRAM_BOT_TOKEN,
+      {
         chat_id: message.chat.id, 
         text: `✅ Puan verildi! (${targetExam.user_name}: ${score}) 🏆\n${foundEmail}`, 
         reply_to_message_id: message.message_id 
-      })
-    });
+      },
+      'telegramWebhook admin-confirm'
+    );
 
     return ok({ ok: true });
   } catch (error) {

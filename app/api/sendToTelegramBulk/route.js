@@ -54,17 +54,23 @@ export async function POST(request) {
       performer: rawName,
     }));
 
-    let hasSuccess = false;
-    let lastError = null;
+    const failedChats = [];
 
     for (const chatId of adminIds) {
       try {
         // Önce bilgi mesajı
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        const infoRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: chatId, text: captionText, parse_mode: 'Markdown' }),
         });
+        const infoJson = await infoRes.json();
+        if (!infoRes.ok || !infoJson?.ok) {
+          const reason = infoJson?.description || `HTTP_${infoRes.status}`;
+          failedChats.push({ chatId, reason: `sendMessage:${reason}` });
+          console.error(`sendToTelegramBulk info mesajı hatası (${chatId}):`, reason);
+          continue;
+        }
 
         // Ardından ses dosyaları
         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMediaGroup`, {
@@ -73,22 +79,22 @@ export async function POST(request) {
           body: JSON.stringify({ chat_id: chatId, media: mediaGroup }),
         });
         const result = await res.json();
-        if (result.ok) {
-          hasSuccess = true;
-        } else {
-          lastError = result.description;
-          console.error(`sendToTelegramBulk Telegram API Hatası (${chatId}):`, result.description);
+        if (!res.ok || !result?.ok) {
+          const reason = result?.description || `HTTP_${res.status}`;
+          failedChats.push({ chatId, reason: `sendMediaGroup:${reason}` });
+          console.error(`sendToTelegramBulk Telegram API Hatası (${chatId}):`, reason);
         }
       } catch (err) {
-        lastError = err.message;
+        failedChats.push({ chatId, reason: err.message });
         console.error(`sendToTelegramBulk fetch hatası (${chatId}):`, err);
       }
     }
 
-    if (hasSuccess) {
-      return ok({ message: 'Ses dosyaları başarıyla gönderildi.' });
+    if (failedChats.length > 0) {
+      const reason = failedChats.map(item => `${item.chatId}:${item.reason}`).join(', ');
+      throw new Error(`Telegram API Hatası: ${reason}`);
     }
-    throw new Error(`Telegram API Hatası: ${lastError || 'Bilinmeyen hata'}`);
+    return ok({ message: 'Ses dosyaları başarıyla gönderildi.' });
   } catch (error) {
     console.error('sendToTelegramBulk hatası:', error);
     return fail('SEND_TO_TELEGRAM_BULK_FAILED', error.message, 500);

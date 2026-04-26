@@ -9,6 +9,35 @@ function getAdminIds() {
   return [...new Set(raw.split(',').map(id => id.trim()).filter(Boolean))];
 }
 
+async function sendTelegramMessageStrict(botToken, payload, context) {
+  const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+
+  let result = null;
+  try {
+    result = await response.json();
+  } catch (parseError) {
+    console.error(`[notifyLogin] ${context} json parse failed`, parseError);
+    throw new Error(`${context}: Telegram response parse failed`);
+  }
+
+  if (!response.ok || !result?.ok) {
+    const reason = result?.description || `HTTP_${response.status}`;
+    console.error(`[notifyLogin] ${context} failed`, {
+      status: response.status,
+      statusText: response.statusText,
+      reason,
+      result,
+    });
+    throw new Error(`${context}: ${reason}`);
+  }
+
+  return result;
+}
+
 export async function POST(request) {
   try {
     const { user, provider } = await request.json();
@@ -45,12 +74,12 @@ export async function POST(request) {
         `\n⏰ Vaqt: ${new Date().toLocaleString('uz-UZ')}`;
 
       await Promise.all(
-        adminIds.map(chatId =>
-          fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: adminText, parse_mode: 'Markdown' }),
-          }).catch(err => console.error(`notifyLogin admin error (${chatId}):`, err))
+        adminIds.map((chatId) =>
+          sendTelegramMessageStrict(
+            BOT_TOKEN,
+            { chat_id: chatId, text: adminText, parse_mode: 'Markdown' },
+            `admin-notify chat_id=${chatId}`
+          )
         )
       );
     }
@@ -63,11 +92,11 @@ export async function POST(request) {
         `Sinov natijalari va bildirishnomalar ushbu bot orqali yuboriladi. ` +
         `Hech narsa qilishingiz shart emas — biz siz bilan bog'lanamiz! 🎓`;
 
-      await fetch(`https://api.telegram.org/bot${MAIN_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: user.id, text: welcomeText, parse_mode: 'Markdown' }),
-      }).catch(err => console.error('notifyLogin welcome error:', err));
+      await sendTelegramMessageStrict(
+        MAIN_BOT_TOKEN,
+        { chat_id: user.id, text: welcomeText, parse_mode: 'Markdown' },
+        `welcome-notify chat_id=${user.id}`
+      );
     }
 
     return ok({ notified: true });
