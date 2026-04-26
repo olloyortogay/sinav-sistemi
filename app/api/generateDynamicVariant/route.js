@@ -1,23 +1,15 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
 import { examBank } from '../../data/questions';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 export async function GET(request) {
   try {
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ success: false, error: 'No DB' }, { status: 500 });
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
     const { data, error } = await supabase.from('question_pools').select('pool_data').limit(1).maybeSingle();
     
     if (error || !data || !data.pool_data) {
-      return NextResponse.json({ success: false, error: 'Havuz bulunamadı veya boş.' }, { status: 404 });
+      return fail('DYNAMIC_POOL_NOT_FOUND', 'Havuz bulunamadı veya boş.', 404);
     }
 
     const pool = data.pool_data;
@@ -79,8 +71,7 @@ export async function GET(request) {
       prepTime: 60, speakTime: 120, hasAudioBtn: false,
     });
 
-    return NextResponse.json({ 
-      success: true, 
+    return ok({
       questions: finalQuestions,
       rawVariant: {
         variantNo: 'dynamic',
@@ -91,6 +82,6 @@ export async function GET(request) {
       }
     });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('GENERATE_DYNAMIC_VARIANT_FAILED', error.message, 500);
   }
 }

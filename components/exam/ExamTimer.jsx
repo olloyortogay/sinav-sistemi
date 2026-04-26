@@ -1,7 +1,7 @@
 'use client';
 import { useExamStore } from '../../store/useExamStore';
 
-export default function ExamTimer({ title = "Yozma Imtihoni / Yazma Sınavı" }) {
+export default function ExamTimer({ title = "Yozma Imtihon / Yazma Sınavı" }) {
   const user = useExamStore(state => state.user);
   const getFormattedTime = useExamStore(state => state.getFormattedTime);
   const isTimeWarning = useExamStore(state => state.isTimeWarning);

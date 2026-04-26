@@ -1,18 +1,10 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { fail, ok, createServiceRoleSupabase, getBearerToken } from '../../../lib/api-utils';
 import { randomUUID } from 'crypto';
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-const defaultStore = { activeVariant: 'random', adminUsername: 'admin', adminPassword: 'admin', adminSessions: [] };
+const defaultStore = { activeVariant: 'random', adminUsername: null, adminPassword: null, adminSessions: [] };
 
 async function readStore() {
-  const supabase = getSupabase();
+  const supabase = createServiceRoleSupabase();
   if (supabase) {
     try {
       const { data, error } = await supabase.from('app_settings').select('data').eq('id', 1).single();
@@ -25,7 +17,7 @@ async function readStore() {
 }
 
 async function writeStore(updates) {
-  const supabase = getSupabase();
+  const supabase = createServiceRoleSupabase();
   const current = await readStore();
   const nextStore = { ...current, ...updates };
 
@@ -42,8 +34,12 @@ export async function POST(request) {
   try {
     const { action, username, password, newUsername, newPassword } = await request.json();
     const store = await readStore();
-    const storedUser = store.adminUsername || 'admin';
-    const storedPass = store.adminPassword || 'admin';
+    const storedUser = store.adminUsername;
+    const storedPass = store.adminPassword;
+
+    if (!storedUser || !storedPass) {
+      return fail('ADMIN_NOT_CONFIGURED', 'Admin credentials are not configured', 503);
+    }
 
     if (action === 'LOGIN') {
       if (username === storedUser && password === storedPass) {
@@ -51,32 +47,31 @@ export async function POST(request) {
         const activeSessions = store.adminSessions || [];
         activeSessions.push(token);
         await writeStore({ adminSessions: activeSessions });
-        return NextResponse.json({ success: true, token });
+        return ok({ token });
       }
-      return NextResponse.json({ success: false, error: 'Kullanıcı adı veya şifre hatalı' }, { status: 401 });
+      return fail('INVALID_CREDENTIALS', 'Kullanıcı adı veya şifre hatalı', 401);
     }
 
     if (action === 'CHANGE_CREDENTIALS') {
-      const authHeader = request.headers.get('authorization');
-      const token = authHeader?.split(' ')[1];
+      const token = getBearerToken(request);
       const activeSessions = store.adminSessions || [];
       
       if (!token || !activeSessions.includes(token)) {
-         return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+         return fail('UNAUTHORIZED', 'Unauthorized', 401);
       }
 
       if (username !== storedUser || password !== storedPass) {
-        return NextResponse.json({ success: false, error: 'Mevcut bilgiler hatalı' }, { status: 401 });
+        return fail('INVALID_CREDENTIALS', 'Mevcut bilgiler hatalı', 401);
       }
       const updates = {};
       if (newUsername) updates.adminUsername = newUsername;
       if (newPassword) updates.adminPassword = newPassword;
       await writeStore(updates);
-      return NextResponse.json({ success: true });
+      return ok({ updated: true });
     }
 
-    return NextResponse.json({ success: false, error: 'Bilinmeyen işlem' }, { status: 400 });
+    return fail('UNKNOWN_ACTION', 'Bilinmeyen işlem', 400);
   } catch (err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('ADMIN_AUTH_FAILED', err.message, 500);
   }
 }

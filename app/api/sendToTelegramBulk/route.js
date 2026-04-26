@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { fail, ok } from '../../../lib/api-utils';
 
 function getAdminIds() {
   const raw = process.env.ADMIN_TELEGRAM_IDS || process.env.TELEGRAM_CHAT_ID || '';
@@ -14,13 +14,13 @@ export async function POST(request) {
     const adminIds = getAdminIds();
 
     if (!BOT_TOKEN) {
-      return NextResponse.json({ success: false, error: 'TELEGRAM_BOT_TOKEN eksik.' }, { status: 500 });
+      return fail('BOT_TOKEN_MISSING', 'TELEGRAM_BOT_TOKEN eksik.', 500);
     }
     if (adminIds.length === 0) {
-      return NextResponse.json({ success: false, error: 'ADMIN_TELEGRAM_IDS yapılandırması eksik.' }, { status: 500 });
+      return fail('ADMIN_IDS_MISSING', 'ADMIN_TELEGRAM_IDS yapılandırması eksik.', 500);
     }
     if (!audioLinks || audioLinks.length === 0) {
-      return NextResponse.json({ success: false, error: 'Gönderilecek ses linki yok.' }, { status: 400 });
+      return fail('AUDIO_LINKS_MISSING', 'Gönderilecek ses linki yok.', 400);
     }
 
     // Markdown escape
@@ -86,11 +86,11 @@ export async function POST(request) {
     }
 
     if (hasSuccess) {
-      return NextResponse.json({ success: true, message: 'Ses dosyaları başarıyla gönderildi.' });
+      return ok({ message: 'Ses dosyaları başarıyla gönderildi.' });
     }
     throw new Error(`Telegram API Hatası: ${lastError || 'Bilinmeyen hata'}`);
   } catch (error) {
     console.error('sendToTelegramBulk hatası:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('SEND_TO_TELEGRAM_BULK_FAILED', error.message, 500);
   }
 }

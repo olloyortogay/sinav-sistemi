@@ -1,34 +1,11 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  // Sunucu tarafında service_role key kullan (RLS'i atlar)
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-async function verifyAdminToken(token) {
-  if (!token) return false;
-  const supabase = getSupabase();
-  if (!supabase) return false;
-  try {
-    const { data, error } = await supabase.from('app_settings').select('data').eq('id', 1).single();
-    if (!error && data?.data?.adminSessions) {
-      return data.data.adminSessions.includes(token);
-    }
-  } catch (e) { }
-  return false;
-}
+import { createServiceRoleSupabase, fail, getBearerToken, getAuthenticatedUserByToken, ok, verifyAdminToken } from '../../../lib/api-utils';
 
 export async function GET(request) {
   try {
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ success: false, error: 'No db' }, { status: 500 });
-    
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
+
+    const token = getBearerToken(request);
     
     const url = new URL(request.url);
     const email = url.searchParams.get('email');
@@ -36,6 +13,7 @@ export async function GET(request) {
     const examType = url.searchParams.get('exam_type');
     
     const isAdmin = await verifyAdminToken(token);
+    const authUser = await getAuthenticatedUserByToken(token, supabase);
     
     let query = supabase.from('exam_results').select('*').order('completed_at', { ascending: false });
     
@@ -52,23 +30,38 @@ export async function GET(request) {
 
     if (isAdmin) {
       // Admin gets all filtered by examType
-    } else if (email || telegramId) {
-      if (email && telegramId) {
-        query = query.or(`user_email.eq.${email},telegram_chat_id.eq.${telegramId}`);
-      } else if (email) {
-        query = query.eq('user_email', email);
-      } else {
+    } else if (authUser) {
+      const authEmail = (authUser.email || '').toLowerCase();
+      const requestedEmail = email ? email.toLowerCase() : null;
+      const authTelegramId = authUser.user_metadata?.telegram_id
+        ? String(authUser.user_metadata.telegram_id)
+        : null;
+
+      if (requestedEmail && requestedEmail !== authEmail) {
+        return fail('NOT_AUTHORIZED', 'Not authorized', 403);
+      }
+      if (telegramId && (!authTelegramId || String(telegramId) !== authTelegramId)) {
+        return fail('NOT_AUTHORIZED', 'Not authorized', 403);
+      }
+
+      if (requestedEmail) {
+        query = query.eq('user_email', requestedEmail);
+      } else if (telegramId) {
         query = query.eq('telegram_chat_id', telegramId);
+      } else if (authEmail) {
+        query = query.eq('user_email', authEmail);
+      } else {
+        return fail('NOT_AUTHORIZED', 'Not authorized', 401);
       }
     } else {
-      return NextResponse.json({ success: false, error: 'Not authorized' }, { status: 401 });
+      return fail('NOT_AUTHORIZED', 'Not authorized', 401);
     }
     
     const { data, error } = await query;
     if (error) throw error;
     
-    return NextResponse.json({ success: true, data });
+    return ok(data);
   } catch(err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('RESULTS_FETCH_FAILED', err.message, 500);
   }
 }

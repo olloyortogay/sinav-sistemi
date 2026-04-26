@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { fail, ok } from '../../../lib/api-utils';
 
 export async function POST(request) {
   try {
@@ -12,7 +12,7 @@ export async function POST(request) {
     const TELEGRAM_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
     if (!audioBlob) {
-      return NextResponse.json({ error: "Ses dosyası bulunamadı." }, { status: 400 });
+      return fail('AUDIO_REQUIRED', 'Ses dosyası bulunamadı.', 400);
     }
 
     // Admin listesini oluştur
@@ -55,13 +55,13 @@ export async function POST(request) {
     }
 
     if (hasSuccess) {
-      return NextResponse.json({ success: true, message: "Telegram'a başarıyla gönderildi" });
+      return ok({ message: "Telegram'a başarıyla gönderildi" });
     } else {
       throw new Error(lastErrorDesc || "Telegram gönderimi tüm adminler için başarısız oldu.");
     }
 
   } catch (error) {
     console.error("Backend Hatası:", error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('SEND_TO_TELEGRAM_FAILED', error.message, 500);
   }
 }

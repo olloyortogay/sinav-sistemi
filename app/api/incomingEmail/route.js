@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { fail, ok } from '../../../lib/api-utils';
 
 export async function POST(request) {
   try {
@@ -30,7 +30,7 @@ export async function POST(request) {
 
     if (uniqueAdmins.length === 0) {
       console.warn("Telegram chat ID is missing");
-      return NextResponse.json({ success: false, reason: 'No telegram config' });
+      return fail('TELEGRAM_CONFIG_MISSING', 'No telegram config', 500);
     }
 
     // Resend Inbound farklı field isimlerini kullanabilir
@@ -64,9 +64,9 @@ export async function POST(request) {
 
     await Promise.all(adminPromises);
 
-    return NextResponse.json({ success: true });
+    return ok({ delivered: true });
   } catch (err) {
     console.error('incomingEmail error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('INCOMING_EMAIL_FAILED', err.message, 500);
   }
 }

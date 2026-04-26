@@ -1,13 +1,5 @@
-import { NextResponse } from 'next/server';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 export async function POST(request) {
   try {
@@ -15,7 +7,7 @@ export async function POST(request) {
     const { examResultId, task1Text, task2Text, kompozisyonText, part1Info, part2Info } = body;
 
     if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ success: false, error: 'GEMINI_API_KEY eksik' }, { status: 500 });
+      return fail('GEMINI_KEY_MISSING', 'GEMINI_API_KEY eksik', 500);
     }
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
@@ -55,7 +47,7 @@ Kompozisyon: ${kompozisyonText || 'Yazılmamış'}`;
     const aiData = JSON.parse(responseText);
 
     // Veritabanını Güncelle
-    const supabase = getSupabase();
+    const supabase = createServiceRoleSupabase();
     if (supabase && examResultId) {
       const { error } = await supabase
         .from('exam_results')
@@ -68,13 +60,12 @@ Kompozisyon: ${kompozisyonText || 'Yazılmamış'}`;
       if (error) console.error("AI Save Error:", error);
     }
 
-    return NextResponse.json({
-      success: true,
+    return ok({
       score: aiData.totalScore,
       feedback: aiData.feedback_uz
     });
   } catch (e) {
     console.error('gradeWriting error:', e);
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    return fail('GRADE_WRITING_FAILED', e.message, 500);
   }
 }

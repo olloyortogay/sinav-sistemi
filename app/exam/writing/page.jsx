@@ -3,7 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import Navbar from '../../../components/Navbar';
 import AuthGate from '../../../components/AuthGate';
 import { supabase } from '../../../lib/supabase';
-import { useExamStore } from '../../../store/useExamStore';
+import { EXAM_STATUS, useExamStore } from '../../../store/useExamStore';
 import ExamTimer from '../../../components/exam/ExamTimer';
 import StartModal from '../../../components/exam/StartModal';
 import QuestionCard from '../../../components/exam/QuestionCard';
@@ -30,7 +30,7 @@ export default function WritingExamPage() {
 
   // ── 1. Oturum Kontrolü ──
   useEffect(() => {
-    if (examStatus !== 'idle') {
+    if (examStatus !== EXAM_STATUS.IDLE) {
       setIsChecking(false);
       return;
     }
@@ -63,7 +63,7 @@ export default function WritingExamPage() {
 
   // ── 2. Timer Loop ──
   useEffect(() => {
-    if (examStatus !== 'running') return;
+    if (examStatus !== EXAM_STATUS.RUNNING) return;
     const t = setInterval(() => tickTimer(), 1000);
     return () => clearInterval(t);
   }, [examStatus, tickTimer]);
@@ -71,7 +71,7 @@ export default function WritingExamPage() {
   // Süre bittiğinde submit
   useEffect(() => {
     // Sınav bitmişse handle submit (Zustand timer 0 olunca submitting yapıyor)
-    if (examStatus === 'submitting') {
+    if (examStatus === EXAM_STATUS.SUBMITTING) {
       handleSubmit();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -83,7 +83,7 @@ export default function WritingExamPage() {
   };
 
   const handleStart = async () => {
-    setExamStatus('loading_variant'); 
+    setExamStatus(EXAM_STATUS.LOADING_VARIANT);
     try {
       const res = await fetch('/api/generateWritingVariant');
       const d = await res.json();
@@ -92,11 +92,11 @@ export default function WritingExamPage() {
         startTimeRef.current = Date.now();
       } else {
         alert(d.error || 'Sınav verisi yüklenemedi.');
-        setExamStatus('rules_reading');
+        setExamStatus(EXAM_STATUS.RULES_READING);
       }
     } catch (e) {
       alert('Sunucuya bağlanılamadı: ' + e.message);
-      setExamStatus('rules_reading');
+      setExamStatus(EXAM_STATUS.RULES_READING);
     }
   };
 
@@ -118,7 +118,7 @@ export default function WritingExamPage() {
       if (!res.ok || !data.success) throw new Error('Sunucu hatası');
       
       setExamResultId(data.examResultId);
-      setExamStatus('finished');
+      setExamStatus(EXAM_STATUS.FINISHED);
     } catch (e) {
       setSubmitError('Gönderim hatası: ' + e.message);
       alert('Gönderim hatası: ' + e.message);
@@ -134,22 +134,22 @@ export default function WritingExamPage() {
     );
   }
 
-  if (examStatus === 'idle') {
+  if (examStatus === EXAM_STATUS.IDLE) {
     return (
       <AuthGate
         onSuccess={handleAuthSuccess}
         redirectTo="/exam/writing"
-        title="Yozma Imtihoni"
+        title="Yozma Imtihon"
         subtitle="Yazma sınavına başlamak için giriş yapın"
       />
     );
   }
 
-  if (examStatus === 'rules_reading' || examStatus === 'loading_variant') {
+  if (examStatus === EXAM_STATUS.RULES_READING || examStatus === EXAM_STATUS.LOADING_VARIANT) {
     return (
       <>
         <StartModal onStart={handleStart} />
-        {examStatus === 'loading_variant' && (
+        {examStatus === EXAM_STATUS.LOADING_VARIANT && (
           <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center">
             <div className="bg-white rounded-2xl p-8 text-center">
               <div className="text-4xl mb-3 animate-spin">⚙️</div>
@@ -161,7 +161,7 @@ export default function WritingExamPage() {
     );
   }
 
-  if (examStatus === 'finished') {
+  if (examStatus === EXAM_STATUS.FINISHED) {
     const counts = getWordCounts();
     return (
       <div className="min-h-screen flex flex-col bg-gradient-to-br from-green-50 to-blue-50">
@@ -170,7 +170,7 @@ export default function WritingExamPage() {
           <div className="bg-white rounded-3xl shadow-2xl p-10 text-center max-w-2xl w-full">
             <div className="text-7xl mb-4">✅</div>
             <h1 className="text-2xl font-black text-gray-800 mb-2">Imtihon Topshirildi!</h1>
-            <p className="text-gray-500 mb-6">Yozma imtihoniz muvaffaqiyatli yuborildi. Natijalar tez orada e&apos;lon qilinadi.</p>
+            <p className="text-gray-500 mb-6">Yozma imtihoningiz muvaffaqiyatli yuborildi. Natijalar tez orada e&apos;lon qilinadi.</p>
             <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-left text-sm text-green-700 space-y-1 mb-6 flex justify-between items-center">
               <div>🟢 Görev 1.1: <strong>{counts.task1} so&apos;z</strong></div>
               <div>🔵 Görev 1.2: <strong>{counts.task2} so&apos;z</strong></div>
@@ -189,11 +189,11 @@ export default function WritingExamPage() {
 
   // ── EXAM (running, submitting) ──────────────────────────────────────────────
   const counts = getWordCounts();
-  const isSubmitting = examStatus === 'submitting';
+  const isSubmitting = examStatus === EXAM_STATUS.SUBMITTING;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <ExamTimer title="Yozma Imtihoni / Yazma Sınavı" />
+      <ExamTimer title="Yozma Imtihon / Yazma Sınavı" />
 
       <div className="max-w-4xl mx-auto p-6 space-y-6">
         {/* BÖLÜM 1 */}
@@ -252,7 +252,7 @@ export default function WritingExamPage() {
               {submitError}
             </div>
           )}
-          <button onClick={() => setExamStatus('submitting')} disabled={isSubmitting}
+          <button onClick={() => setExamStatus(EXAM_STATUS.SUBMITTING)} disabled={isSubmitting}
             className="w-full bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white font-black text-xl py-5 rounded-2xl transition shadow-xl">
             {isSubmitting ? '⏳ Yuborilmoqda...' : '✅ Imtihonni Topshirish'}
           </button>

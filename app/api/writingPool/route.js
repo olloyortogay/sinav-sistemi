@@ -1,17 +1,9 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 // GET — fetch writing pool
 export async function GET() {
-  const supabase = getSupabase();
-  if (!supabase) return NextResponse.json({ success: false, error: 'No DB config' }, { status: 500 });
+  const supabase = createServiceRoleSupabase();
+  if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
   const { data, error } = await supabase
     .from('writing_pool')
@@ -19,19 +11,19 @@ export async function GET() {
     .limit(1)
     .maybeSingle();
 
-  if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true, pool: data?.pool_data || null, updatedAt: data?.updated_at || null });
+  if (error) return fail('WRITING_POOL_FETCH_FAILED', error.message, 500);
+  return ok({ pool: data?.pool_data || null, updatedAt: data?.updated_at || null });
 }
 
 // POST — save writing pool (new schema: part1_writing_pool + part2_writing_pool)
 export async function POST(request) {
-  const supabase = getSupabase();
-  if (!supabase) return NextResponse.json({ success: false, error: 'No DB config' }, { status: 500 });
+  const supabase = createServiceRoleSupabase();
+  if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
   try {
     const body = await request.json();
     const { poolData } = body;
-    if (!poolData) return NextResponse.json({ success: false, error: 'poolData is required' }, { status: 400 });
+    if (!poolData) return fail('POOL_DATA_REQUIRED', 'poolData is required', 400);
 
     const { data: existing } = await supabase.from('writing_pool').select('id').limit(1).maybeSingle();
 
@@ -45,9 +37,9 @@ export async function POST(request) {
       result = await supabase.from('writing_pool').insert([{ pool_data: poolData }]);
     }
 
-    if (result.error) return NextResponse.json({ success: false, error: result.error.message }, { status: 500 });
-    return NextResponse.json({ success: true });
+    if (result.error) return fail('WRITING_POOL_SAVE_FAILED', result.error.message, 500);
+    return ok({ saved: true });
   } catch (e) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    return fail('WRITING_POOL_SAVE_FAILED', e.message, 500);
   }
 }

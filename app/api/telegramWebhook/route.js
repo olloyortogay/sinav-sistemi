@@ -1,12 +1,4 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 // E-posta doğrudan Resend API ile gönder (kendi API'sine HTTP çağrısı değil)
 async function sendEmailViaResend({ userName, userEmail, totalTime, score }) {
@@ -93,7 +85,7 @@ export async function POST(request) {
     console.log("Telegram Webhook in:", JSON.stringify(body).slice(0, 300));
     
     const message = body.message;
-    if (!message || !message.text) return NextResponse.json({ ok: true });
+    if (!message || !message.text) return ok({ ok: true });
 
     const replyTo = message.reply_to_message;
 
@@ -102,7 +94,7 @@ export async function POST(request) {
       const parts = message.text.split(' ');
       if (parts.length > 1) {
         const userIdOrEmail = parts[1].trim();
-        const supabase = getSupabase();
+        const supabase = createServiceRoleSupabase();
         if (supabase) {
           await supabase.from('exam_results')
             .update({ telegram_chat_id: String(message.chat.id) })
@@ -118,12 +110,12 @@ export async function POST(request) {
               parse_mode: 'Markdown' 
             })
           });
-          return NextResponse.json({ ok: true, reason: 'Account linked' });
+          return ok({ ok: true, reason: 'Account linked' });
         }
       }
     }
 
-    if (!replyTo) return NextResponse.json({ ok: true });
+    if (!replyTo) return ok({ ok: true });
 
     // Öğrenci adını audio performer'dan veya caption'dan al
     let studentName = null;
@@ -153,11 +145,11 @@ export async function POST(request) {
     
     if (!studentName || isNaN(score) || score < 0 || score > 100) {
       console.log('Skip: name=', studentName, 'score=', score);
-      return NextResponse.json({ ok: true, reason: 'No student name or invalid score' });
+      return ok({ ok: true, reason: 'No student name or invalid score' });
     }
 
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ ok: true, reason: 'No DB' });
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
     // İsme göre arama — ILIKE ile büyük/küçük harf ve boşluk farkı tolere edilir
     const { data: results, error } = await supabase
@@ -180,7 +172,7 @@ export async function POST(request) {
           reply_to_message_id: message.message_id
         })
       });
-      return NextResponse.json({ ok: true, reason: 'Not found in DB' });
+      return ok({ ok: true, reason: 'Not found in DB' });
     }
     
     const targetExam = results[0];
@@ -240,9 +232,9 @@ export async function POST(request) {
       })
     });
 
-    return NextResponse.json({ ok: true, success: true });
+    return ok({ ok: true });
   } catch (error) {
     console.error('Webhook Error:', error);
-    return NextResponse.json({ ok: false, error: error.message });
+    return fail('TELEGRAM_WEBHOOK_FAILED', error.message, 500);
   }
 }

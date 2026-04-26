@@ -1,23 +1,37 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, getAuthenticatedUserByToken, getBearerToken, ok, verifyAdminToken } from '../../../lib/api-utils';
 
 export async function POST(request) {
   try {
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ success: false, error: 'No db' }, { status: 500 });
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
     const body = await request.json();
     const { email, telegram_id } = body;
+    const token = getBearerToken(request);
+    const isAdmin = await verifyAdminToken(token);
+    const authUser = await getAuthenticatedUserByToken(token, supabase);
 
     if (!email && !telegram_id) {
-      return NextResponse.json({ success: false, error: 'Kimlik bilgisi eksik' }, { status: 400 });
+      return fail('IDENTITY_REQUIRED', 'Kimlik bilgisi eksik', 400);
+    }
+
+    if (!isAdmin) {
+      if (!authUser) {
+        return fail('NOT_AUTHORIZED', 'Not authorized', 401);
+      }
+
+      const authEmail = (authUser.email || '').toLowerCase();
+      const requestedEmail = email ? String(email).toLowerCase() : null;
+      const authTelegramId = authUser.user_metadata?.telegram_id
+        ? String(authUser.user_metadata.telegram_id)
+        : null;
+
+      if (requestedEmail && requestedEmail !== authEmail) {
+        return fail('NOT_AUTHORIZED', 'Not authorized', 403);
+      }
+      if (telegram_id && (!authTelegramId || String(telegram_id) !== authTelegramId)) {
+        return fail('NOT_AUTHORIZED', 'Not authorized', 403);
+      }
     }
 
     let query = supabase.from('exam_results').delete();
@@ -34,8 +48,8 @@ export async function POST(request) {
     
     if (error) throw error;
 
-    return NextResponse.json({ success: true });
+    return ok({ deleted: true });
   } catch(err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('DELETE_RESULTS_FAILED', err.message, 500);
   }
 }

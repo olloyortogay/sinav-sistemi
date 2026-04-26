@@ -1,12 +1,4 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 function getAdminIds() {
   const raw = process.env.ADMIN_TELEGRAM_IDS || process.env.TELEGRAM_CHAT_ID || '';
@@ -32,19 +24,15 @@ export async function POST(request) {
       const now = Date.now();
       const lastRequest = rateLimitMap.get(student_id);
       if (lastRequest && now - lastRequest < 10000) {
-        return NextResponse.json(
-          { success: false, error: 'Too Many Requests: Lütfen 10 saniye bekleyip tekrar deneyin.' },
-          { status: 429 }
-        );
+        return fail('RATE_LIMITED', 'Too Many Requests: Lütfen 10 saniye bekleyip tekrar deneyin.', 429);
       }
       rateLimitMap.set(student_id, now);
     }
     // ---------------------------
 
-    const supabase = getSupabase();
+    const supabase = createServiceRoleSupabase();
     if (!supabase) {
-      console.warn('Supabase yapılandırılmamış — sonuç kaydedilmedi');
-      return NextResponse.json({ success: true, saved: false });
+      return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
     }
 
     const generatedId = crypto.randomUUID();
@@ -88,9 +76,9 @@ export async function POST(request) {
       }).catch(err => console.error('n8n webhook hatası:', err));
     }
 
-    return NextResponse.json({ success: true, saved: true, resultId: generatedId });
+    return ok({ saved: true, resultId: generatedId });
   } catch (err) {
     console.error('saveResult error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('SAVE_RESULT_FAILED', err.message, 500);
   }
 }

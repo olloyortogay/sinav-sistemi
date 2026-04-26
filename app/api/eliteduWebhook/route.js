@@ -1,19 +1,9 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { fail, ok } from '../../../lib/api-utils';
 
 // @Elitedu_arizalarbot — Kullanıcı veri toplama webhook'u
 // Google ve Telegram ile giriş yapan tüm öğrencileri @olloyortogay'a raporlar.
 
 const ELITEDU_BOT_TOKEN = process.env.ELITEDU_BOT_TOKEN;
-const ADMIN_CHAT_ID = process.env.TELEGRAM_CHAT_ID; // @olloyortogay
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
 async function sendToAdmin(text) {
   const ADMIN_CHAT_ID = process.env.TELEGRAM_CHAT_ID;
   const adminIds = ADMIN_CHAT_ID ? ADMIN_CHAT_ID.split(',').map(id => id.trim()) : [];
@@ -42,7 +32,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
     const message = body.message;
-    if (!message) return NextResponse.json({ ok: true });
+    if (!message) return ok({ ok: true });
 
     const chatId = message.chat?.id;
     const firstName = message.chat?.first_name || message.from?.first_name || '';
@@ -67,10 +57,10 @@ export async function POST(request) {
       await sendToAdmin(text);
     }
 
-    return NextResponse.json({ ok: true });
+    return ok({ ok: true });
   } catch (err) {
     console.error('Elitedu Webhook Error:', err);
-    return NextResponse.json({ ok: false, error: err.message });
+    return fail('ELITEDU_WEBHOOK_FAILED', err.message, 500);
   }
 }
 
@@ -78,5 +68,5 @@ export async function POST(request) {
 // Sınav tamamlandığında bu bota da bildirim gönderilmesi için
 // app/exam/speaking/page.js içinden çağrılabilir.
 export async function GET() {
-  return NextResponse.json({ ok: true, bot: 'Elitedu_arizalarbot', status: 'active' });
+  return ok({ ok: true, bot: 'Elitedu_arizalarbot', status: 'active' });
 }

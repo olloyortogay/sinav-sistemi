@@ -1,18 +1,10 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleSupabase, fail, getBearerToken, ok } from '../../../lib/api-utils';
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-const defaultStore = { activeVariant: 'random', adminUsername: 'admin', adminPassword: 'admin', adminSessions: [] };
+const defaultStore = { activeVariant: 'random', adminUsername: null, adminPassword: null, adminSessions: [] };
 
 // Supabase'den ayarları oku
 async function readStore() {
-  const supabase = getSupabase();
+  const supabase = createServiceRoleSupabase();
   if (supabase) {
     try {
       const { data, error } = await supabase.from('app_settings').select('data').eq('id', 1).single();
@@ -26,7 +18,7 @@ async function readStore() {
 
 // Supabase'e ayarları yaz (Upsert)
 async function writeStore(updates) {
-  const supabase = getSupabase();
+  const supabase = createServiceRoleSupabase();
   const current = await readStore();
   const nextStore = { ...current, ...updates };
 
@@ -41,25 +33,24 @@ async function writeStore(updates) {
 
 export async function GET() {
   const store = await readStore();
-  return NextResponse.json({ activeVariant: store.activeVariant || 'random' });
+  return ok({ activeVariant: store.activeVariant || 'random' });
 }
 
 export async function POST(request) {
   try {
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    const token = getBearerToken(request);
     
     const store = await readStore();
     const sessions = store.adminSessions || [];
     
     if (!token || !sessions.includes(token)) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return fail('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
     const { variant } = await request.json();
     await writeStore({ activeVariant: String(variant) });
-    return NextResponse.json({ success: true, activeVariant: variant });
+    return ok({ activeVariant: variant });
   } catch (err) {
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('SETTINGS_UPDATE_FAILED', err.message, 500);
   }
 }

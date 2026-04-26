@@ -2,8 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import TelegramLoginWidget from './TelegramLoginWidget';
-import { processAuthSession, buildGoogleUser, upsertAndEnrich } from '../lib/useAuth';
-import { useRouter } from 'next/navigation';
+import { processAuthSession, upsertAndEnrich } from '../lib/useAuth';
 
 /**
  * Merkezi giriş bileşeni — Google OAuth + Telegram Login.
@@ -15,7 +14,6 @@ import { useRouter } from 'next/navigation';
  *   subtitle         — Alt başlık metni
  */
 export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
-  const router = useRouter();
   const [oauthLoading, setOauthLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -34,7 +32,10 @@ export default function AuthGate({ onSuccess, redirectTo, title, subtitle }) {
     setOauthLoading(true);
     setError(null);
     try {
-      const callbackUrl = window.location.origin + '/login'; // Kesin kural: /login rotasına dön
+      const safePath = redirectTo && redirectTo.startsWith('/') ? redirectTo : '/login';
+      const envBase = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, '');
+      const originBase = typeof window !== 'undefined' ? window.location.origin : '';
+      const callbackUrl = `${envBase || originBase}${safePath}`;
       const { error: err } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: { redirectTo: callbackUrl },

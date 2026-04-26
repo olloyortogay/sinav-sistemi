@@ -1,19 +1,11 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 const getRandom = (arr) => arr && arr.length > 0 ? arr[Math.floor(Math.random() * arr.length)] : null;
 
 export async function GET() {
   try {
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ success: false, error: 'No DB' }, { status: 500 });
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
     const { data, error } = await supabase
       .from('writing_pool')
@@ -22,7 +14,7 @@ export async function GET() {
       .maybeSingle();
 
     if (error || !data?.pool_data) {
-      return NextResponse.json({ success: false, error: 'Yazma havuzu bulunamadı.' }, { status: 404 });
+      return fail('WRITING_POOL_NOT_FOUND', 'Yazma havuzu bulunamadı.', 404);
     }
 
     const pool = data.pool_data;
@@ -30,11 +22,10 @@ export async function GET() {
     const part2 = getRandom(pool.part2_writing_pool);
 
     if (!part1 || !part2) {
-      return NextResponse.json({ success: false, error: 'Havuzda yeterli veri yok.' }, { status: 404 });
+      return fail('WRITING_POOL_INSUFFICIENT', 'Havuzda yeterli veri yok.', 404);
     }
 
-    return NextResponse.json({
-      success: true,
+    return ok({
       variant: {
         part1: {
           ortakMetin: part1.ortakMetin,
@@ -47,6 +38,6 @@ export async function GET() {
       }
     });
   } catch (e) {
-    return NextResponse.json({ success: false, error: e.message }, { status: 500 });
+    return fail('GENERATE_WRITING_VARIANT_FAILED', e.message, 500);
   }
 }

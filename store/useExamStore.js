@@ -10,9 +10,17 @@
  */
 
 import { create } from 'zustand';
-import { devtools } from 'zustand/middleware';
+import { createJSONStorage, devtools, persist } from 'zustand/middleware';
 
 // ─── Sabitler ─────────────────────────────────────────────────────────────────
+export const EXAM_STATUS = Object.freeze({
+  IDLE: 'idle',
+  RULES_READING: 'rules_reading',
+  LOADING_VARIANT: 'loading_variant',
+  RUNNING: 'running',
+  SUBMITTING: 'submitting',
+  FINISHED: 'finished',
+});
 
 /**
  * examStatus geçerli değerleri:
@@ -36,7 +44,7 @@ const INITIAL_STATE = {
   user: null,              // { id, name, email, provider, student_id, telegramUsername, avatar, ... }
 
   // Sınav durumu
-  examStatus: 'idle',      // 'idle' | 'rules_reading' | 'running' | 'submitting' | 'finished'
+  examStatus: EXAM_STATUS.IDLE,
 
   // Sayaç (saniye)
   timeRemaining: 3600,     // Varsayılan: 60 dakika. setExamData veya başlatma anında override edilir.
@@ -58,7 +66,7 @@ const INITIAL_STATE = {
 
 export const useExamStore = create(
   devtools(
-    (set, get) => ({
+    persist((set, get) => ({
       ...INITIAL_STATE,
 
       // ── Actions ─────────────────────────────────────────────────────────────
@@ -72,7 +80,7 @@ export const useExamStore = create(
        */
       setUser: (user) =>
         set(
-          { user, examStatus: 'rules_reading', submitError: null },
+          { user, examStatus: EXAM_STATUS.RULES_READING, submitError: null },
           false,
           'setUser'
         ),
@@ -85,7 +93,16 @@ export const useExamStore = create(
        * @param {'idle'|'rules_reading'|'running'|'submitting'|'finished'} status
        */
       setExamStatus: (status) =>
-        set({ examStatus: status }, false, `setExamStatus/${status}`),
+        set(
+          (state) => {
+            if (!Object.values(EXAM_STATUS).includes(status)) {
+              return state;
+            }
+            return { examStatus: status };
+          },
+          false,
+          `setExamStatus/${status}`
+        ),
 
       /**
        * tickTimer()
@@ -97,7 +114,7 @@ export const useExamStore = create(
         set(
           (state) => {
             if (state.timeRemaining <= 1) {
-              return { timeRemaining: 0, examStatus: 'submitting' };
+              return { timeRemaining: 0, examStatus: EXAM_STATUS.SUBMITTING };
             }
             return { timeRemaining: state.timeRemaining - 1 };
           },
@@ -119,7 +136,7 @@ export const useExamStore = create(
           {
             examData: data,
             timeRemaining: durationSeconds,
-            examStatus: 'running',
+            examStatus: EXAM_STATUS.RUNNING,
             submitError: null,
           },
           false,
@@ -155,7 +172,7 @@ export const useExamStore = create(
        */
       setSubmitError: (message) =>
         set(
-          { submitError: message, examStatus: message ? 'running' : 'submitting' },
+          { submitError: message, examStatus: message ? EXAM_STATUS.RUNNING : EXAM_STATUS.SUBMITTING },
           false,
           'setSubmitError'
         ),
@@ -244,7 +261,18 @@ export const useExamStore = create(
       },
     }),
     {
-      name: 'TitanExamStore', // Redux DevTools'da görünecek isim
+      name: 'td-writing-exam-store',
+      storage: createJSONStorage(() => sessionStorage),
+      partialize: (state) => ({
+        user: state.user,
+        examStatus: state.examStatus,
+        timeRemaining: state.timeRemaining,
+        examData: state.examData,
+        studentAnswers: state.studentAnswers,
+      }),
     }
-  )
+  ),
+    {
+      name: 'TitanExamStore', // Redux DevTools'da görünecek isim
+    })
 );

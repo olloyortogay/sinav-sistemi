@@ -1,12 +1,4 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 /**
  * POST /api/upsertStudent
@@ -24,18 +16,12 @@ export async function POST(request) {
 
     // Zorunlu alan kontrolü
     if (!provider || !id || !name) {
-      return NextResponse.json(
-        { success: false, error: 'provider, id ve name zorunludur.' },
-        { status: 400 }
-      );
+      return fail('VALIDATION_ERROR', 'provider, id ve name zorunludur.', 400);
     }
 
-    const supabase = getSupabase();
+    const supabase = createServiceRoleSupabase();
     if (!supabase) {
-      return NextResponse.json(
-        { success: false, error: 'Veritabanı bağlantısı kurulamadı.' },
-        { status: 500 }
-      );
+      return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
     }
 
     // PostgreSQL upsert_student() fonksiyonu çağrısı
@@ -51,12 +37,9 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, student_id: studentId });
+    return ok({ student_id: studentId });
   } catch (err) {
     console.error('upsertStudent error:', err);
-    return NextResponse.json(
-      { success: false, error: err.message },
-      { status: 500 }
-    );
+    return fail('UPSERT_STUDENT_FAILED', err.message, 500);
   }
 }

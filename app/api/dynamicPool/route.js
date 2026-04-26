@@ -1,17 +1,9 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createServiceRoleSupabase, fail, getBearerToken, ok } from '../../../lib/api-utils';
 
-function getSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
-
-const defaultStore = { activeVariant: 'random', adminUsername: 'admin', adminPassword: 'admin', adminSessions: [] };
+const defaultStore = { activeVariant: 'random', adminUsername: null, adminPassword: null, adminSessions: [] };
 
 async function readStore() {
-  const supabase = getSupabase();
+  const supabase = createServiceRoleSupabase();
   if (supabase) {
     try {
       const { data, error } = await supabase.from('app_settings').select('data').eq('id', 1).single();
@@ -25,38 +17,37 @@ async function readStore() {
 
 export async function GET(request) {
   try {
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ success: false, error: 'No DB' }, { status: 500 });
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
     const { data, error } = await supabase.from('question_pools').select('pool_data').limit(1).maybeSingle();
     
     if (error && error.code !== 'PGRST116') {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return fail('POOL_FETCH_FAILED', error.message, 500);
     }
 
-    return NextResponse.json({ success: true, pool: data?.pool_data || null });
+    return ok({ pool: data?.pool_data || null });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('POOL_FETCH_FAILED', error.message, 500);
   }
 }
 
 export async function POST(request) {
   try {
     // Basic admin auth check
-    const authHeader = request.headers.get('authorization');
-    const token = authHeader?.split(' ')[1];
+    const token = getBearerToken(request);
     
     if (!token) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+      return fail('UNAUTHORIZED', 'Unauthorized', 401);
     }
 
-    const supabase = getSupabase();
-    if (!supabase) return NextResponse.json({ success: false, error: 'No DB' }, { status: 500 });
+    const supabase = createServiceRoleSupabase();
+    if (!supabase) return fail('SUPABASE_CONFIG_MISSING', 'Supabase service role key is missing', 500);
 
     const store = await readStore();
     const sessions = store.adminSessions || [];
     if (!sessions.includes(token)) {
-      return NextResponse.json({ success: false, error: 'Unauthorized token' }, { status: 401 });
+      return fail('UNAUTHORIZED', 'Unauthorized token', 401);
     }
 
     const { poolData } = await request.json();
@@ -76,11 +67,11 @@ export async function POST(request) {
     }
 
     if (dbError) {
-      return NextResponse.json({ success: false, error: dbError.message }, { status: 500 });
+      return fail('POOL_SAVE_FAILED', dbError.message, 500);
     }
 
-    return NextResponse.json({ success: true });
+    return ok({ saved: true });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('POOL_SAVE_FAILED', error.message, 500);
   }
 }

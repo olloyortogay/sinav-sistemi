@@ -1,11 +1,7 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { createAnonSupabase, fail, ok } from '../../../lib/api-utils';
 
 // Server-side client with anon key
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-);
+const supabase = createAnonSupabase();
 
 export async function GET() {
   try {
@@ -16,9 +12,9 @@ export async function GET() {
       .limit(20);
 
     if (error) throw error;
-    return NextResponse.json({ success: true, comments: data });
+    return ok({ comments: data });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('DISCUSSIONS_FETCH_FAILED', error.message, 500);
   }
 }
 
@@ -28,7 +24,7 @@ export async function POST(request) {
     const { user_name, comment, avatar_url } = body;
 
     if (!user_name || !comment) {
-      return NextResponse.json({ success: false, error: 'Name and comment required' }, { status: 400 });
+      return fail('VALIDATION_ERROR', 'Name and comment required', 400);
     }
 
     const { data, error } = await supabase
@@ -37,8 +33,8 @@ export async function POST(request) {
       .select();
 
     if (error) throw error;
-    return NextResponse.json({ success: true, comment: data[0] });
+    return ok({ comment: data[0] });
   } catch (error) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return fail('DISCUSSION_CREATE_FAILED', error.message, 500);
   }
 }

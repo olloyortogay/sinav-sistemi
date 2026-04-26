@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { fail, ok } from '../../../lib/api-utils';
 
 export async function POST(request) {
   try {
@@ -7,7 +7,7 @@ export async function POST(request) {
 
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not set — skipping email');
-      return NextResponse.json({ success: true, sent: false });
+      return ok({ sent: false });
     }
 
     const resend   = new Resend(process.env.RESEND_API_KEY);
@@ -95,9 +95,9 @@ export async function POST(request) {
 
     if (error) throw error;
 
-    return NextResponse.json({ success: true, sent: true });
+    return ok({ sent: true });
   } catch (err) {
     console.error('sendResultEmail error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('SEND_RESULT_EMAIL_FAILED', err.message, 500);
   }
 }

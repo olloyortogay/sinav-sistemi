@@ -1,12 +1,4 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-function getSupabase() {
-  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key  = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
+import { createAnonSupabase, fail, ok } from '../../../lib/api-utils';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
@@ -15,7 +7,7 @@ export async function POST(request) {
     const { audioLinks, resultId } = await request.json();
 
     if (!audioLinks || audioLinks.length === 0) {
-      return NextResponse.json({ success: false, error: "No audio links provided" });
+      return fail('AUDIO_LINKS_REQUIRED', 'No audio links provided', 400);
     }
 
     let fullTranscription = "";
@@ -54,7 +46,7 @@ export async function POST(request) {
     }
 
     if (!fullTranscription.trim()) {
-      return NextResponse.json({ success: false, error: "Transcription failed or empty" });
+      return fail('TRANSCRIPTION_EMPTY', 'Transcription failed or empty', 422);
     }
 
     // 2. Evaluate using Llama-3
@@ -95,7 +87,7 @@ ${fullTranscription}`;
 
     // 3. Save to Supabase exam_results exactly into the 'ai_feedback' column if it exists,
     // otherwise we save it as ai_feedback inside 'sections' JSONB to be safe from Schema errors.
-    const supabase = getSupabase();
+    const supabase = createAnonSupabase();
     if (supabase && resultId) {
       // First fetch the old sections to merge
       const { data: oldData } = await supabase.from('exam_results').select('sections').eq('id', resultId).single();
@@ -109,10 +101,10 @@ ${fullTranscription}`;
       if (error) console.error("Could not save ai_feedback to DB:", error);
     }
 
-    return NextResponse.json({ success: true, aiFeedback, transcription: fullTranscription });
+    return ok({ aiFeedback, transcription: fullTranscription });
 
   } catch (err) {
     console.error('analyzeAudio error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('ANALYZE_AUDIO_FAILED', err.message, 500);
   }
 }

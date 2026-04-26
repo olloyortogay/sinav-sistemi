@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { fail, ok } from '../../../lib/api-utils';
 
 /**
  * Tüm admin Telegram ID'lerini ADMIN_TELEGRAM_IDS env değişkeninden okur.
@@ -70,9 +70,9 @@ export async function POST(request) {
       }).catch(err => console.error('notifyLogin welcome error:', err));
     }
 
-    return NextResponse.json({ success: true });
+    return ok({ notified: true });
   } catch (err) {
     console.error('notifyLogin error:', err);
-    return NextResponse.json({ success: false, error: err.message }, { status: 500 });
+    return fail('NOTIFY_LOGIN_FAILED', err.message, 500);
   }
 }
