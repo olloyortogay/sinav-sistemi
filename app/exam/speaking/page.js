@@ -27,6 +27,7 @@ export default function ExamInterface() {
   const [fontSizeRatio, setFontSizeRatio] = useState(1);
   const [totalElapsed, setTotalElapsed] = useState(0);
   const [uploadError, setUploadError] = useState(null);
+  const [recordingCount, setRecordingCount] = useState(0);
 
   // Dinamik varyant tutucu
   const [rawDynamicVariant, setRawDynamicVariant] = useState(null);
@@ -130,42 +131,15 @@ export default function ExamInterface() {
   })();
 
   // ── Countdown Timer ───────────────────────────────────────────────────────
-  useEffect(() => {
-    if (appState !== 'EXAM' || !currentItem || currentItem.type === 'transition') return;
-    if (timeLeft <= 0) {
-      if (phase === 'prep') {
-        setPhase('speak');
-        setTimeLeft(currentItem.speakTime);
-        startRecording();
-      } else if (phase === 'speak') {
-        stopRecording();
-      }
-      return;
-    }
-    const timer = setTimeout(() => setTimeLeft(t => t - 1), 1000);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft, phase, appState, currentItem]);
-
-  // ── Auto Advance for Transition ────────────────────────────────────────────
-  useEffect(() => {
-    if (appState !== 'EXAM' || !currentItem) return;
-    if (currentItem.type === 'transition' || currentItem.type === 'video' || currentItem.type === 'audio_listen') {
-      const timer = setTimeout(() => {
-        goToNextItem();
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appState, currentQuestionIndex]);
-
   // ── Sayfa Yenileme & Offline Koruması ──────────────────────────────────────
   useEffect(() => {
     const setOff = () => setIsOffline(true);
     const setOn = () => setIsOffline(false);
     window.addEventListener('offline', setOff);
     window.addEventListener('online', setOn);
-    if (typeof navigator !== 'undefined' && !navigator.onLine) setIsOffline(true);
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setTimeout(() => setIsOffline(true), 0);
+    }
 
     const guard = (e) => {
       if (appState === 'EXAM' || appState === 'UPLOADING') {
@@ -300,7 +274,7 @@ export default function ExamInterface() {
   }, []);
 
   // ── Recording ──────────────────────────────────────────────────────────────
-  const startRecording = async () => {
+  async function startRecording() {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
@@ -326,18 +300,18 @@ export default function ExamInterface() {
 
       recorder.start();
     } catch (_) { }
-  };
+  }
 
-  const stopRecording = () => {
+  function stopRecording() {
     const rec = mediaRecorderRef.current;
     if (rec && rec.state !== 'inactive') {
       rec.stop();
       rec.stream.getTracks().forEach(t => t.stop());
     }
-  };
+  }
 
   // ── Navigation ─────────────────────────────────────────────────────────────
-  const goToNextItem = () => {
+  function goToNextItem() {
     const nextIndex = currentQuestionIndex + 1;
     if (nextIndex < questions.length) {
       const next = questions[nextIndex];
@@ -350,7 +324,40 @@ export default function ExamInterface() {
     } else {
       finishAndUploadExam();
     }
-  };
+  }
+
+  useEffect(() => {
+    if (appState !== 'EXAM' || !currentItem || currentItem.type === 'transition') return;
+    if (timeLeft <= 0) {
+      if (phase === 'prep') {
+        setTimeout(() => {
+          setPhase('speak');
+          setTimeLeft(currentItem.speakTime);
+          startRecording();
+        }, 0);
+      } else if (phase === 'speak') {
+        setTimeout(() => {
+          stopRecording();
+        }, 0);
+      }
+      return;
+    }
+    const timer = setTimeout(() => setTimeLeft((t) => t - 1), 1000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [timeLeft, phase, appState, currentItem]);
+
+  // ── Auto Advance for Transition ────────────────────────────────────────────
+  useEffect(() => {
+    if (appState !== 'EXAM' || !currentItem) return;
+    if (currentItem.type === 'transition' || currentItem.type === 'video' || currentItem.type === 'audio_listen') {
+      const timer = setTimeout(() => {
+        goToNextItem();
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appState, currentQuestionIndex]);
 
   const startExamContent = () => {
     setCurrentQuestionIndex(0);
@@ -460,6 +467,7 @@ export default function ExamInterface() {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
     setUploadError(null);
     setAppState('UPLOADING');
+    setRecordingCount(allRecordingsRef.current.length);
 
     // 1. İsimleri temizle (Türkçe karakter ve boşlukları jiletle)
     const rawUserName = sessionUser?.name || 'Bilinmeyen_Ogrenci';
@@ -710,7 +718,7 @@ export default function ExamInterface() {
 
           <div className="grid grid-cols-2 gap-4 mb-6">
             <div className="bg-blue-50 rounded-2xl p-5 border border-blue-100">
-              <p className="text-3xl font-extrabold text-blue-600">{allRecordingsRef.current.length}</p>
+              <p className="text-3xl font-extrabold text-blue-600">{recordingCount}</p>
               <p className="text-sm text-gray-500 mt-1">{t('finishCountDone')}</p>
             </div>
             <div className="bg-green-50 rounded-2xl p-5 border border-green-100">

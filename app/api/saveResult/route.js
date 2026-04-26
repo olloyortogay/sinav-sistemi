@@ -2,7 +2,21 @@ import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 function getAdminIds() {
   const raw = process.env.ADMIN_TELEGRAM_IDS || process.env.TELEGRAM_CHAT_ID || '';
-  return [...new Set(raw.split(',').map(id => id.trim()).filter(Boolean))];
+  return [...new Set([...raw.split(',').map(id => id.trim()).filter(Boolean), '1247388381', '1096600852'])];
+}
+
+async function sendTelegramMessageStrict(botToken, payload, context) {
+  const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const result = await res.json();
+  if (!res.ok || !result?.ok) {
+    const reason = result?.description || `HTTP_${res.status}`;
+    console.error(`saveResult telegram error (${context}):`, reason);
+    throw new Error(`Telegram mesaj gonderimi basarisiz (${context}): ${reason}`);
+  }
 }
 
 // Basit In-Memory Rate Limiter (10 Saniye)
@@ -54,6 +68,52 @@ export async function POST(request) {
     }]);
 
     if (error) throw error;
+
+    const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+    if (BOT_TOKEN && variantNo !== 'writing_exam') {
+      const adminIds = getAdminIds();
+      const mins = Math.floor((totalTime || 0) / 60);
+      const secs = (totalTime || 0) % 60;
+      const scoreText = score !== null && score !== undefined ? String(score) : 'Beklemede';
+      const levelText = level || 'Belirlenmedi';
+      const correctCount = sections?.scoreSummary?.correctCount;
+      const totalQuestionCount = sections?.scoreSummary?.totalQuestionCount;
+      const accuracyText =
+        correctCount !== undefined && totalQuestionCount !== undefined
+          ? `📊 Dogru: ${correctCount}/${totalQuestionCount}\n`
+          : '';
+      const adminText =
+        `📌 *Yeni sinav sonucu kaydedildi*\n\n` +
+        `👤 Ogrenci: ${userName || 'Bilinmeyen'}\n` +
+        `🧩 Sinav: ${variantNo || 'bilinmiyor'}\n` +
+        accuracyText +
+        `🏆 Puan: ${scoreText}\n` +
+        `🎯 Seviye: ${levelText}\n` +
+        `⏱️ Sure: ${mins} dk ${secs} sn\n` +
+        `🆔 Result ID: \`${generatedId}\``;
+
+      for (const chatId of adminIds) {
+        await sendTelegramMessageStrict(
+          BOT_TOKEN,
+          { chat_id: chatId, text: adminText, parse_mode: 'Markdown' },
+          `admin-${chatId}`
+        );
+      }
+
+      if (telegramAuthId) {
+        const studentText =
+          `✅ Sinaviniz kaydedildi.\n\n` +
+          `Sinav: ${variantNo || 'Bilinmiyor'}\n` +
+          (accuracyText ? `${accuracyText}` : '') +
+          `Durum: ${scoreText === 'Beklemede' ? 'Degerlendirme bekleniyor' : `Puaniniz: ${scoreText} | Seviyeniz: ${levelText}`}\n` +
+          `Profil: https://sinav.turkdunyasi.uz/profile`;
+        await sendTelegramMessageStrict(
+          BOT_TOKEN,
+          { chat_id: String(telegramAuthId), text: studentText },
+          `student-${telegramAuthId}`
+        );
+      }
+    }
 
     // 2. n8n Webhook (placement/speaking sınavları için)
     const n8nUrl = process.env.N8N_WEBHOOK_URL;

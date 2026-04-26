@@ -6,6 +6,7 @@ import { placementQuestions } from '../../../src/data/placementQuestions';
 import { supabase, getPublicUrl } from '../../../lib/supabase';
 import Navbar from '../../../components/Navbar';
 import AuthGate from '../../../components/AuthGate';
+import Link from 'next/link';
 
 export default function PlacementExamPage() {
   const router = useRouter();
@@ -92,14 +93,6 @@ export default function PlacementExamPage() {
     return () => clearInterval(timer);
   }, [appState, isTimeUp]);
 
-  // Süre dolduğunda otomatik bitir
-  useEffect(() => {
-    if (isTimeUp && appState === 'EXAM') {
-      finishAndUploadExam();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isTimeUp, appState]);
-
   // ── SORULARI 3'LÜ GRUPLAMA ────────────────────────────────────────────────
   const chunkedQuestions = useMemo(() => {
     const result = [];
@@ -178,11 +171,13 @@ export default function PlacementExamPage() {
 
   // ── Ses Durumu Sıfırlama ──────────────────────────────────────────────────
   useEffect(() => {
-    setIsPlaying(false);
-    setAudioProgress(0);
-    setAudioCurrentTime(0);
-    setAudioDuration(0);
-    setAudioHasEnded(false);
+    queueMicrotask(() => {
+      setIsPlaying(false);
+      setAudioProgress(0);
+      setAudioCurrentTime(0);
+      setAudioDuration(0);
+      setAudioHasEnded(false);
+    });
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -300,7 +295,7 @@ export default function PlacementExamPage() {
   };
 
   // ── Puan Hesaplama ve Veritabanı Kaydı ──────────────────────────────────────
-  const finishAndUploadExam = async () => {
+  async function finishAndUploadExam() {
     if (totalTimerRef.current) clearInterval(totalTimerRef.current);
     if (hasSavedRef.current) return;
     hasSavedRef.current = true;
@@ -403,7 +398,15 @@ export default function PlacementExamPage() {
     }
 
     setAppState('FINISHED');
-  };
+  }
+
+  // Süre dolduğunda otomatik bitir
+  useEffect(() => {
+    if (isTimeUp && appState === 'EXAM') {
+      finishAndUploadExam();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isTimeUp, appState]);
 
   // ── Render Helpers (Soru İçeriği) ─────────────────────────────────────────
   const renderSingleQuestion = (q) => {
@@ -568,12 +571,12 @@ export default function PlacementExamPage() {
             <span className="hidden sm:inline">Türk Dünyası</span>
           </div>
           <div className="flex gap-2 sm:gap-3 text-sm sm:text-base">
-            <a href="/" className="bg-blue-800/40 hover:bg-blue-800/60 border border-blue-500/30 text-white font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition backdrop-blur-sm">
+            <Link href="/" className="bg-blue-800/40 hover:bg-blue-800/60 border border-blue-500/30 text-white font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition backdrop-blur-sm">
               Ana Sayfa
-            </a>
-            <a href="/profile" className="bg-white hover:bg-blue-50 text-blue-700 font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition">
+            </Link>
+            <Link href="/profile" className="bg-white hover:bg-blue-50 text-blue-700 font-bold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl shadow-md transition">
               Profilim
-            </a>
+            </Link>
             <button onClick={handleLogout} className="bg-red-500/80 hover:bg-red-500 border border-red-400 text-white font-semibold px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl transition backdrop-blur-sm">
               Çıkış
             </button>

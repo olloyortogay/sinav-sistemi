@@ -125,6 +125,23 @@ export default function ProfilePage() {
 
   const hasTelegramLinked = sessionUser.provider === 'telegram';
 
+  const getListeningSummary = (result) => {
+    if (!(result?.variant_no === 'listening_exam' || result?.sections?.exam_type === 'listening')) return null;
+    const fromSummary = result?.sections?.scoreSummary;
+    if (fromSummary?.totalQuestionCount) {
+      return {
+        correct: Number(fromSummary.correctCount) || 0,
+        total: Number(fromSummary.totalQuestionCount) || 35,
+      };
+    }
+    const details = Array.isArray(result?.sections?.detailedResults) ? result.sections.detailedResults : [];
+    if (!details.length) return null;
+    return {
+      correct: details.filter((d) => d?.isCorrect).length,
+      total: details.length,
+    };
+  };
+
   return (
     <div className="min-h-screen bg-[#FDFDFD] font-sans selection:bg-blue-100 selection:text-blue-900">
       <Navbar />
@@ -193,7 +210,9 @@ export default function ProfilePage() {
               <p className="text-gray-500 bg-gray-50 p-6 text-center rounded-xl border border-dashed border-gray-300">{t('profNoExam')}</p>
             ) : (
               <div className="space-y-4">
-                {results.map(r => (
+                {results.map((r) => {
+                  const listeningSummary = getListeningSummary(r);
+                  return (
                   <React.Fragment key={r.id}>
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition">
                       <div>
@@ -203,11 +222,18 @@ export default function ProfilePage() {
                        <h4 className="font-bold text-gray-800">
                          {r.variant_no === 'writing_exam' || r.sections?.exam_type === 'writing'
                            ? '✍️ Yozma Imtihoni (Yazma Sınavı)'
+                           : r.variant_no === 'listening_exam' || r.sections?.exam_type === 'listening'
+                             ? '🎧 Dinleme Sınavı'
                            : r.variant_no === 'placement_exam' || r.variant_no === 'placement_test' 
                              ? t('modPlacementTitle') || 'Seviye Tespit Sınavı'
                              : `${t('examTitle')} (${t('profExamVariant')} ${r.variant_no})`}
                        </h4>
                        <p className="text-sm text-gray-500 mt-1">{t('profDuration')}: {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}</p>
+                       {listeningSummary && (
+                         <div className="mt-2 inline-flex items-center gap-2 bg-indigo-50 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full border border-indigo-200 shadow-sm">
+                           📊 Doğru: {listeningSummary.correct}/{listeningSummary.total} | Puan: {r.score ?? 0} | Seviye: {r.level || 'A1'}
+                         </div>
+                       )}
                        {r.score !== null && r.score >= 70 && r.variant_no !== 'placement_exam' && r.variant_no !== 'placement_test' && (
                          <div className="mt-2 inline-flex items-center gap-1 bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-full border border-yellow-300 shadow-sm" title="Tebrikler!">
                            🏆 Oliy Daraja (Üstün Başarı)
@@ -293,7 +319,8 @@ export default function ProfilePage() {
                     </div>
                   )}
                 </React.Fragment>
-                ))}
+                );
+                })}
               </div>
             )}
           </div>

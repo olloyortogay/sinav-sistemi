@@ -52,16 +52,18 @@ export default function LandingPage() {
       title: t('modListeningTitle'), 
       desc: t('modListeningDesc'), 
       icon: '🎧', 
-      active: false, 
-      color: 'gray'
+      active: true, 
+      color: 'teal',
+      path: '/exam/listening'
     },
     { 
       id: 'reading', 
       title: t('modReadingTitle'), 
       desc: t('modReadingDesc'), 
       icon: '📖', 
-      active: false, 
-      color: 'gray'
+      active: true, 
+      color: 'indigo',
+      path: '/exam/reading'
     },
     { 
       id: 'writing', 
@@ -133,7 +135,7 @@ export default function LandingPage() {
             <p className="text-gray-500 font-medium">{t('modulesDesc')}</p>
           </div>
           <div className="text-blue-600 font-bold text-sm bg-blue-50 px-4 py-2 rounded-xl">
-            {t('activeModuleNum')} 3
+            {t('activeModuleNum')} 5
           </div>
         </div>
 

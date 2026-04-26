@@ -25,13 +25,36 @@ export default function WritingExamPage() {
     setExamResultId
   } = useExamStore();
 
-  const [isChecking, setIsChecking] = useState(true);
+  const [isChecking, setIsChecking] = useState(examStatus === EXAM_STATUS.IDLE);
   const startTimeRef = useRef(null);
+
+  async function handleSubmit() {
+    const totalTimeSpent = startTimeRef.current 
+      ? Math.floor((Date.now() - startTimeRef.current) / 1000) 
+      : 0;
+      
+    const payload = getSubmitPayload(totalTimeSpent);
+
+    try {
+      const res = await fetch('/api/sendWritingResult', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error('Sunucu hatası');
+      
+      setExamResultId(data.examResultId);
+      setExamStatus(EXAM_STATUS.FINISHED);
+    } catch (e) {
+      setSubmitError('Gönderim hatası: ' + e.message);
+      alert('Gönderim hatası: ' + e.message);
+    }
+  }
 
   // ── 1. Oturum Kontrolü ──
   useEffect(() => {
     if (examStatus !== EXAM_STATUS.IDLE) {
-      setIsChecking(false);
       return;
     }
 
@@ -53,7 +76,7 @@ export default function WritingExamPage() {
           if (raw) {
             setUser(JSON.parse(raw));
           }
-        } catch (_) {}
+        } catch {}
       }
       setIsChecking(false);
     };
@@ -97,31 +120,6 @@ export default function WritingExamPage() {
     } catch (e) {
       alert('Sunucuya bağlanılamadı: ' + e.message);
       setExamStatus(EXAM_STATUS.RULES_READING);
-    }
-  };
-
-  // ── Submit İşlemi ──
-  const handleSubmit = async () => {
-    const totalTimeSpent = startTimeRef.current 
-      ? Math.floor((Date.now() - startTimeRef.current) / 1000) 
-      : 0;
-      
-    const payload = getSubmitPayload(totalTimeSpent);
-
-    try {
-      const res = await fetch('/api/sendWritingResult', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) throw new Error('Sunucu hatası');
-      
-      setExamResultId(data.examResultId);
-      setExamStatus(EXAM_STATUS.FINISHED);
-    } catch (e) {
-      setSubmitError('Gönderim hatası: ' + e.message);
-      alert('Gönderim hatası: ' + e.message);
     }
   };
 

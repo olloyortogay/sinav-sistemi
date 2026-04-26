@@ -8,6 +8,15 @@ async function downloadSingleVariantPDF(variant) {
   const { jsPDF } = await import('jspdf');
   const html2canvas = (await import('html2canvas')).default;
 
+  const resolveImageUrl = (rawUrl) => {
+    if (!rawUrl || typeof rawUrl !== 'string') return '';
+    if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://') || rawUrl.startsWith('data:')) {
+      return rawUrl;
+    }
+    if (rawUrl.startsWith('//')) return `https:${rawUrl}`;
+    return `${window.location.origin}${rawUrl.startsWith('/') ? '' : '/'}${rawUrl}`;
+  };
+
   // Gizli render konteyneri oluştur
   const container = document.createElement('div');
   container.style.cssText = `
@@ -16,8 +25,8 @@ async function downloadSingleVariantPDF(variant) {
     padding: 40px; box-sizing: border-box; color: #111;
   `;
 
-  const imgSrc = variant.part1_2Scenario?.image_url;
-  const p2ImgSrc = variant.part2Scenario?.image_url;
+  const imgSrc = resolveImageUrl(variant.part1_2Scenario?.image_url);
+  const p2ImgSrc = resolveImageUrl(variant.part2Scenario?.image_url);
 
   container.innerHTML = `
     <style>
@@ -49,13 +58,13 @@ async function downloadSingleVariantPDF(variant) {
     `).join('')}
 
     <div class="section-title">1.2. Bölüm — Fotoğraf Yorumlama</div>
-    ${imgSrc ? `<img class="scenario-img" src="${window.location.origin}${imgSrc}" crossorigin="anonymous"/>` : ''}
+    ${imgSrc ? `<img class="scenario-img" src="${imgSrc}" crossorigin="anonymous"/>` : ''}
     ${variant.part1_2Scenario.questions.map((q, i) => `
       <div class="question"><span class="q-num">${i + 4}.</span><span class="q-text">${q.q}</span></div>
     `).join('')}
 
     <div class="section-title">2. Bölüm — Görsel & Tartışma</div>
-    ${p2ImgSrc ? `<img class="scenario-img" src="${window.location.origin}${p2ImgSrc}" crossorigin="anonymous"/>` : ''}
+    ${p2ImgSrc ? `<img class="scenario-img" src="${p2ImgSrc}" crossorigin="anonymous"/>` : ''}
     <ul class="bullets">
       ${variant.part2Scenario.bullets.map(b => `<li>${b}</li>`).join('')}
     </ul>
@@ -77,8 +86,13 @@ async function downloadSingleVariantPDF(variant) {
 
   document.body.appendChild(container);
 
-  // Resimlerin yüklenmesini bekle
-  await new Promise(r => setTimeout(r, 800));
+  // Resimlerin yüklenmesini gerçekten bekle (Supabase gibi uzak kaynaklar için)
+  const images = Array.from(container.querySelectorAll('img'));
+  await Promise.all(images.map((img) => new Promise((resolve) => {
+    if (img.complete) return resolve();
+    img.onload = () => resolve();
+    img.onerror = () => resolve(); // Resim bozuksа bile PDF üretimi devam etsin
+  })));
 
   try {
     const canvas = await html2canvas(container, {
@@ -123,7 +137,10 @@ async function downloadSingleVariantPDF(variant) {
 
 // ─── ADMIN PAGE ─────────────────────────────────────────────────────────────
 export default function AdminPage() {
-  const [isAuth, setIsAuth] = useState(false);
+  const [isAuth, setIsAuth] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(localStorage.getItem('admin_token'));
+  });
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
@@ -227,11 +244,12 @@ export default function AdminPage() {
   useEffect(() => {
     const token = localStorage.getItem('admin_token');
     if (token) {
-      setIsAuth(true);
-      fetchSettings();
-      fetchResults();
-      fetchDynamicPool();
-      fetchWritingPool();
+      setTimeout(() => {
+        fetchSettings();
+        fetchResults();
+        fetchDynamicPool();
+        fetchWritingPool();
+      }, 0);
     }
   }, [fetchSettings, fetchResults, fetchDynamicPool, fetchWritingPool]);
 

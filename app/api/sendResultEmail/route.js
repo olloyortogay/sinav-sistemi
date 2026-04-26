@@ -3,7 +3,17 @@ import { fail, ok } from '../../../lib/api-utils';
 
 export async function POST(request) {
   try {
-    const { userName, userEmail, totalTime, resultId, score, level } = await request.json();
+    const {
+      userName,
+      userEmail,
+      totalTime,
+      resultId,
+      score,
+      level,
+      examType,
+      correctCount,
+      totalQuestionCount,
+    } = await request.json();
 
     if (!process.env.RESEND_API_KEY) {
       console.warn('RESEND_API_KEY not set — skipping email');
@@ -18,10 +28,18 @@ export async function POST(request) {
       ? `${process.env.NEXT_PUBLIC_APP_URL}/results/${resultId}`
       : `${process.env.NEXT_PUBLIC_APP_URL}`;
 
+    const resolvedExamType = examType || (score !== undefined ? 'placement' : 'speaking');
+    const examTitle =
+      resolvedExamType === 'listening'
+        ? 'Dinleme Sınavı'
+        : resolvedExamType === 'placement'
+          ? 'Seviye Tespit Sınavı'
+          : 'Konuşma Sınavı';
+
     const { error } = await resend.emails.send({
       from: 'Türk Dünyası <sinav@turkdunyasi.uz>',
       to:   [userEmail],
-      subject: score !== undefined ? `🎉 Seviye Tespit Sınavı Sonucu — ${userName}` : `🎉 Konuşma Sınavı Tamamlandı — ${userName}`,
+      subject: score !== undefined ? `🎉 ${examTitle} Sonucu — ${userName}` : `🎉 ${examTitle} Tamamlandı — ${userName}`,
       html: `
         <!DOCTYPE html>
         <html lang="tr">
@@ -34,7 +52,7 @@ export async function POST(request) {
               <div style="display:inline-block;background:white;color:#dc2626;font-size:12px;font-weight:900;letter-spacing:2px;padding:6px 12px;border-radius:20px;margin-bottom:16px;">TÜRK DÜNYASI SINAV MERKEZİ</div>
               <h1 style="color:white;margin:0;font-size:26px;font-weight:800">Tebrikler, ${userName}! 🎉</h1>
               <p style="color:#fecaca;margin-top:8px;font-size:16px">
-                ${score !== undefined ? 'Türkçe Seviye Tespit Sınavını Başarıyla Tamamladınız' : 'Türkçe Konuşma Sınavını Başarıyla Tamamladınız'}
+                ${score !== undefined ? `Türkçe ${examTitle} Başarıyla Tamamladınız` : `Türkçe ${examTitle} Başarıyla Tamamladınız`}
               </p>
             </div>
 
@@ -45,6 +63,12 @@ export async function POST(request) {
                   <div style="font-size:32px;font-weight:900;color:#be123c">${score} <span style="font-size:16px;color:#f43f5e">/ 100</span></div>
                   <div style="font-size:13px;color:#e11d48;margin-top:6px;font-weight:bold;text-transform:uppercase">Sınav Puanı</div>
                 </div>
+                ${correctCount !== undefined && totalQuestionCount !== undefined ? `
+                  <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:12px;padding:20px 24px;text-align:center;flex:1;min-width:120px">
+                    <div style="font-size:28px;font-weight:900;color:#4338ca">${correctCount}/${totalQuestionCount}</div>
+                    <div style="font-size:13px;color:#4f46e5;margin-top:6px;font-weight:bold;text-transform:uppercase">Doğru Sayısı</div>
+                  </div>
+                ` : ''}
                 <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:20px 24px;text-align:center;flex:1;min-width:120px">
                   <div style="font-size:32px;font-weight:900;color:#1d4ed8">${level || 'A1'}</div>
                   <div style="font-size:13px;color:#2563eb;margin-top:6px;font-weight:bold;text-transform:uppercase">CEFR Seviyesi</div>

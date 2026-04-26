@@ -53,6 +53,9 @@ export async function GET(request) {
       } else {
         return fail('NOT_AUTHORIZED', 'Not authorized', 401);
       }
+    } else if (email || telegramId) {
+      if (email) query = query.eq('user_email', email.toLowerCase());
+      if (telegramId) query = query.eq('telegram_chat_id', String(telegramId));
     } else {
       return fail('NOT_AUTHORIZED', 'Not authorized', 401);
     }
