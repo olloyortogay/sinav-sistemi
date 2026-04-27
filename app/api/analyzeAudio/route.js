@@ -3,6 +3,12 @@ import { createAnonSupabase, fail, ok } from '../../../lib/api-utils';
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 export async function POST(request) {
+  // GEÇİCİ OLARAK DURDURULDU
+  return ok({ 
+    aiFeedback: "AI analizi şu anda geçici olarak kapalıdır. Sonuçlarınız manuel olarak değerlendirilecektir.", 
+    transcription: "AI servisleri geçici olarak durduruldu." 
+  });
+
   try {
     const { audioLinks, resultId } = await request.json();
 

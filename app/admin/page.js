@@ -185,6 +185,13 @@ export default function AdminPage() {
   const [loadingWritingResults, setLoadingWritingResults] = useState(false);
   const writingFileInputRef = useRef(null);
 
+  const [listeningResults, setListeningResults] = useState([]);
+  const [loadingListeningResults, setLoadingListeningResults] = useState(false);
+
+  const [readingResults, setReadingResults] = useState([]);
+  const [loadingReadingResults, setLoadingReadingResults] = useState(false);
+
+
   const allVariants = generateAllVariants();
 
   const fetchSettings = useCallback(async () => {
@@ -239,6 +246,32 @@ export default function AdminPage() {
       if (d.success) setWritingResults(d.data || []);
     } catch (err) { console.error(err); }
     setLoadingWritingResults(false);
+  }, []);
+
+  const fetchListeningResults = useCallback(async () => {
+    setLoadingListeningResults(true);
+    const token = localStorage.getItem('admin_token');
+    try {
+      const res = await fetch('/api/results?exam_type=listening', {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      });
+      const d = await res.json();
+      if (d.success) setListeningResults(d.data || []);
+    } catch (err) { console.error(err); }
+    setLoadingListeningResults(false);
+  }, []);
+
+  const fetchReadingResults = useCallback(async () => {
+    setLoadingReadingResults(true);
+    const token = localStorage.getItem('admin_token');
+    try {
+      const res = await fetch('/api/results?exam_type=reading', {
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      });
+      const d = await res.json();
+      if (d.success) setReadingResults(d.data || []);
+    } catch (err) { console.error(err); }
+    setLoadingReadingResults(false);
   }, []);
 
   useEffect(() => {
@@ -661,7 +694,11 @@ export default function AdminPage() {
             { id: 'listening',label: '🎧 Listening', sub: 'Dinleme' },
             { id: 'reading',  label: '📖 Reading',   sub: 'Okuma' },
           ].map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+            <button key={tab.id} onClick={() => {
+              setActiveTab(tab.id);
+              if (tab.id === 'listening') fetchListeningResults();
+              if (tab.id === 'reading') fetchReadingResults();
+            }}
               className={`flex flex-col items-center px-6 py-3 font-bold text-sm transition whitespace-nowrap border-b-4 ${
                 activeTab === tab.id
                   ? 'border-blue-600 text-blue-800 bg-blue-50 rounded-t-lg'
@@ -1041,30 +1078,103 @@ export default function AdminPage() {
 
         {/* ═══════════════ LISTENING DİNLEME ═══════════════ */}
         {activeTab === 'listening' && (
-          <div className="bg-white rounded-xl shadow border p-8 text-center">
-            <div className="text-6xl mb-4">🎧</div>
-            <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Listening Dinleme</h2>
-            <p className="text-gray-500 mb-6">Dinleme sınavı altyapısı hazırlanıyor.</p>
-            <div className="bg-blue-50 border border-blue-200 rounded-xl p-6 text-left max-w-md mx-auto">
-              <h3 className="font-bold text-blue-800 mb-3">🔧 Teknik Altyapı (Hazır)</h3>
-              <ul className="space-y-2 text-sm text-blue-700">
-                <li>✅ Supabase Storage: <code className="bg-blue-100 px-1 rounded">listening-audio</code> bucket</li>
-                <li>✅ API rotası: <code className="bg-blue-100 px-1 rounded">/api/listeningPool</code></li>
-                <li>⏳ Ses dosyası yükleme UI</li>
-                <li>⏳ Soru-ses eşleştirme sistemi</li>
-              </ul>
-            </div>
-            <div className="mt-4 inline-block bg-yellow-100 text-yellow-800 text-xs font-black px-4 py-1.5 rounded-full">🚧 YAKINDA</div>
+          <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow border p-0 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-gray-800">Listening — Sınav Sonuçları</h2>
+                    <p className="text-gray-500 text-sm mt-1">Dinleme sınavını tamamlayan öğrenciler.</p>
+                  </div>
+                  <button onClick={fetchListeningResults} className="bg-blue-50 text-blue-600 px-4 py-2 font-bold rounded-lg text-sm hover:bg-blue-100 transition">🔄 Yenile</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="bg-gray-50 text-gray-700 uppercase font-bold border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4">Öğrenci Adı</th>
+                        <th className="px-6 py-4">E-posta</th>
+                        <th className="px-6 py-4 text-center">Puan</th>
+                        <th className="px-6 py-4">Tarih</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingListeningResults ? (
+                        <tr><td colSpan="4" className="text-center py-8 text-gray-500">Yükleniyor...</td></tr>
+                      ) : listeningResults.length === 0 ? (
+                        <tr><td colSpan="4" className="text-center py-8 text-gray-500 font-medium">Henüz dinleme sınavı kaydı bulunmuyor.</td></tr>
+                      ) : (
+                        listeningResults.map(r => (
+                          <tr key={r.id} className="border-b last:border-b-0 hover:bg-gray-50 transition">
+                            <td className="px-6 py-4 font-bold text-gray-900">{r.user_name}</td>
+                            <td className="px-6 py-4 text-gray-500">{r.user_email || '-'}</td>
+                            <td className="px-6 py-4 text-center">
+                              {r.score !== null ? (
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md font-bold text-xs">{r.score}</span>
+                              ) : (
+                                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md font-bold text-xs">Puan Bekliyor</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-gray-400 text-xs">
+                              {new Date(r.completed_at).toLocaleString('tr-TR')}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
           </div>
         )}
 
         {/* ═══════════════ READING OKUMA ═══════════════ */}
         {activeTab === 'reading' && (
-          <div className="bg-white rounded-xl shadow border p-8 text-center">
-            <div className="text-6xl mb-4">📖</div>
-            <h2 className="text-2xl font-extrabold text-gray-800 mb-2">Reading Okuma</h2>
-            <p className="text-gray-500 mb-6">Okuma sınavı modülü geliştirme aşamasında.</p>
-            <div className="mt-4 inline-block bg-yellow-100 text-yellow-800 text-xs font-black px-4 py-1.5 rounded-full">🚧 YAKINDA</div>
+          <div className="space-y-4">
+              <div className="bg-white rounded-xl shadow border p-0 overflow-hidden">
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center">
+                  <div>
+                    <h2 className="text-lg font-extrabold text-gray-800">Reading — Sınav Sonuçları</h2>
+                    <p className="text-gray-500 text-sm mt-1">Okuma sınavını tamamlayan öğrenciler.</p>
+                  </div>
+                  <button onClick={fetchReadingResults} className="bg-blue-50 text-blue-600 px-4 py-2 font-bold rounded-lg text-sm hover:bg-blue-100 transition">🔄 Yenile</button>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-gray-600">
+                    <thead className="bg-gray-50 text-gray-700 uppercase font-bold border-b border-gray-200">
+                      <tr>
+                        <th className="px-6 py-4">Öğrenci Adı</th>
+                        <th className="px-6 py-4">E-posta</th>
+                        <th className="px-6 py-4 text-center">Puan</th>
+                        <th className="px-6 py-4">Tarih</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {loadingReadingResults ? (
+                        <tr><td colSpan="4" className="text-center py-8 text-gray-500">Yükleniyor...</td></tr>
+                      ) : readingResults.length === 0 ? (
+                        <tr><td colSpan="4" className="text-center py-8 text-gray-500 font-medium">Henüz okuma sınavı kaydı bulunmuyor.</td></tr>
+                      ) : (
+                        readingResults.map(r => (
+                          <tr key={r.id} className="border-b last:border-b-0 hover:bg-gray-50 transition">
+                            <td className="px-6 py-4 font-bold text-gray-900">{r.user_name}</td>
+                            <td className="px-6 py-4 text-gray-500">{r.user_email || '-'}</td>
+                            <td className="px-6 py-4 text-center">
+                              {r.score !== null ? (
+                                <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md font-bold text-xs">{r.score}</span>
+                              ) : (
+                                <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-md font-bold text-xs">Puan Bekliyor</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 text-gray-400 text-xs">
+                              {new Date(r.completed_at).toLocaleString('tr-TR')}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
           </div>
         )}
 

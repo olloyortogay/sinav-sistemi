@@ -174,9 +174,20 @@ export default function WritingExamPage() {
               <div>🔵 Görev 1.2: <strong>{counts.task2} so&apos;z</strong></div>
               <div>📝 Kompozisyon: <strong>{counts.essay} so&apos;z</strong></div>
             </div>
-            <a href="/profile" className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-xl transition">
-              Profilimni Ko&apos;rish →
-            </a>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+              <a 
+                href="/profile"
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl transition shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2"
+              >
+                <span>Natijalarim (Profil)</span>
+              </a>
+              <a 
+                href="/"
+                className="flex-1 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-4 px-6 rounded-2xl transition active:scale-95 flex items-center justify-center"
+              >
+                Ana Sayfaya Dön
+              </a>
+            </div>
           </div>
 
           <AiFeedbackCard />

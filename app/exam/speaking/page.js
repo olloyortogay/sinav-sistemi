@@ -759,6 +759,28 @@ export default function ExamInterface() {
             </div>
           )}
 
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+            <a 
+              href="/exam/writing"
+              className="flex-1 bg-gray-900 hover:bg-black text-white font-bold py-4 px-6 rounded-2xl transition shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>Sonraki Sınav (Yazma)</span>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+            </a>
+            <a 
+              href="/profile"
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-6 rounded-2xl transition shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2"
+            >
+              <span>Natijalarim (Profil)</span>
+            </a>
+            <a 
+              href="/"
+              className="flex-1 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 font-bold py-4 px-6 rounded-2xl transition active:scale-95 flex items-center justify-center"
+            >
+              Ana Sayfaya Dön
+            </a>
+          </div>
+
           <p className="text-gray-400 text-xs mt-6">{t('finishCloseStr')}</p>
         </div>
         </div>

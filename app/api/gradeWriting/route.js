@@ -2,6 +2,12 @@ import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { createServiceRoleSupabase, fail, ok } from '../../../lib/api-utils';
 
 export async function POST(request) {
+  // GEÇİCİ OLARAK DURDURULDU
+  return ok({ 
+    score: 0, 
+    feedback: "AI değerlendirmesi şu anda geçici olarak kapalıdır. Yazılarınız öğretmenler tarafından incelenecektir." 
+  });
+
   try {
     const body = await request.json();
     const { examResultId, task1Text, task2Text, kompozisyonText, part1Info, part2Info } = body;

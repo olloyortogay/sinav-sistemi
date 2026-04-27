@@ -10,8 +10,8 @@ import {
   listeningSections,
 } from '../src/data/listeningQuestions';
 
-const LISTENING_AUDIO_URL = 'https://oracvhqkmtclkkujqcrh.supabase.co/storage/v1/object/public/assets/dinleme%20sinavi/audio1.mp3';
-const LISTENING_MAP_URL = 'https://oracvhqkmtclkkujqcrh.supabase.co/storage/v1/object/public/assets/dinleme%20sinavi/harita1.png';
+const LISTENING_AUDIO_URL = 'https://oracvhqkmtclkkujqcrh.supabase.co/storage/v1/object/public/assets/ses/dinleme-sinavi/ses-v2.m4a';
+const LISTENING_MAP_URL = 'https://oracvhqkmtclkkujqcrh.supabase.co/storage/v1/object/public/assets/ses/harita1.png';
 
 const allQuestions = listeningSections.flatMap((section) => section.questions);
 

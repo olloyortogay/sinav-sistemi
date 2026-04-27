@@ -675,10 +675,10 @@ export default function PlacementExamPage() {
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <button 
-                onClick={() => router.push('/exam/speaking')}
+                onClick={() => router.push('/exam/reading')}
                 className="flex-1 bg-gray-900 hover:bg-black text-white font-bold py-4 px-8 rounded-2xl transition shadow-lg hover:shadow-xl active:scale-95 flex items-center justify-center gap-2"
               >
-                <span>Konuşma Sınavına Geç</span>
+                <span>Sonraki Sınav (Okuma)</span>
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
               </button>
               <button 

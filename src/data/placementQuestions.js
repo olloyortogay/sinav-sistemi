@@ -81,7 +81,7 @@ export const placementQuestions = [
   {
     id: 23, level: "A1", type: "matching",
     instruction: "23. Dinlediğiniz metne göre aşağıdaki sorular ve cevapları eşleştiriniz.",
-    mediaUrl: "a1-dinleme1.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/a1-dinleme1.m4a", mediaType: "audio",
     pairs: [
       { q: "Mehmet kaç yaşında?", a: "35" },
       { q: "Serdar ve Mehmet kaç yıldır arkadaşlar?", a: "17" },
@@ -92,7 +92,7 @@ export const placementQuestions = [
   {
     id: "group_a1_listening_2", level: "A1", type: "audio_group",
     instruction: "Dinlediğiniz metne göre 24 - 28. sorulara cevap veriniz.",
-    mediaUrl: "a1-dinleme2.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/a1-dinleme2.m4a", mediaType: "audio",
     questions: [
       { id: 24, question: "24. Fatih, İstanbul'un en büyük ilçesidir.", options: ["Doğru", "Yanlış"], correctAnswer: "Yanlış", type: "true_false" },
       { id: 25, question: "25. Fevzi Paşa Caddesi, Fatih'in en büyük caddesidir.", options: ["Doğru", "Yanlış"], correctAnswer: "Doğru", type: "true_false" },
@@ -150,7 +150,7 @@ export const placementQuestions = [
   {
     id: "group_a2_listening_1", level: "A2", type: "audio_group",
     instruction: "Dinlediğiniz metne göre 44 ve 45. sorulara cevap veriniz.",
-    mediaUrl: "a2-dinleme1.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/a2-dinleme1.m4a", mediaType: "audio",
     questions: [
       { id: 44, question: "44. Krep için ne kadar un koyuyoruz?", options: ["iki adet", "iki tane", "İki bardak", "iki avuç"], correctAnswer: "İki bardak" },
       { id: 45, question: "45. Krepi pişirmeden önce yağı ____", options: ["ısıtıyoruz", "döküyoruz", "karıştırıyoruz", "soğutuyoruz"], correctAnswer: "ısıtıyoruz" }
@@ -159,7 +159,7 @@ export const placementQuestions = [
   {
     id: 46, level: "A2", type: "matching",
     instruction: "46. Dinlediğiniz metne göre aşağıdaki cümleler ve isimleri eşleştiriniz.",
-    mediaUrl: "a2-dinleme2.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/a2-dinleme2.m4a", mediaType: "audio",
     pairs: [
       { q: "Yaz aylarında hayvanlarla ilgilendi.", a: "Jeff Bezos" },
       { q: "Okulu bitiremedi. Çünkü okuldan attılar.", a: "Socihora Honda" },
@@ -214,14 +214,14 @@ export const placementQuestions = [
   {
     id: "group_b1_listening_1", level: "B1", type: "audio_group",
     instruction: "Dinlediğiniz metne göre 59-61. sorulara cevap veriniz.",
-    mediaUrl: "b1-dinleme1.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/b1-dinleme1.m4a", mediaType: "audio",
     questions: [
       { id: 59, question: "59. Dinlediğiniz metne göre şeker hakkında aşağıdakilerden hangisi yanlıştır?", options: ["İnsan vücudunun saf şekere ihtiyacı yoktur.", "Şeker, obezite gibi birçok hastalığa sebep olur.", "Şeker, gerekli bir enerji kaynağıdır.", "Şeker, fazla tüketilirse zehir etkisi yapar."], correctAnswer: "Şeker, gerekli bir enerji kaynağıdır." },
       { id: 60, question: "60. Dinlediğiniz metne göre aşağıdaki hastalıklardan hangisinin sebebi şeker değildir?", options: ["migren", "aşırı zayıflık", "akciğer kanseri", "diyabet"], correctAnswer: "aşırı zayıflık" }
     ]
   },
-  { id: 61, level: "B1", type: "multiple_choice", mediaType: "audio", mediaUrl: "b1-dinleme1.mp3", question: "61. Dinlediğiniz metne göre aşağıdakilerden hangi doğrudur?", options: ["Bütün uzmanlara göre şekeri tamamen bırakmamız gerekmektedir.", "Şeker tüketimi insanların sağlığını sadece fiziksel olarak etkiler.", "Şeker diğer besin kaynakları ile birlikte enerji kaynağı haline gelir.", "Tatlı yaparken şeker yerine başka bir gıda maddesi koyamayız."], correctAnswer: "Şeker diğer besin kaynakları ile birlikte enerji kaynağı haline gelir." },
-  { id: "group_b1_listening_2", level: "B1", type: "audio_group", instruction: "Dinlediğiniz metne göre 62 ve 63. soruya cevap veriniz.", mediaUrl: "b1-dinleme2.mp3", mediaType: "audio", questions: [{ id: 62, question: "62. Kız, gece uyurken bir ses durunca uyanmış ve evde yabancı bir kişi ile karşılaşmış.", options: ["Doğru", "Yanlış"], correctAnswer: "Yanlış", type: "true_false" }, { id: 63, question: "63. Kızın yeni ev arkadaşından özür dilemesinin sebebi istemeyerek ona zarar vermesidir?", options: ["Doğru", "Yanlış"], correctAnswer: "Doğru", type: "true_false" }] },
+  { id: 61, level: "B1", type: "multiple_choice", mediaType: "audio", mediaUrl: "ses/tespit-sinavi/b1-dinleme1.m4a", question: "61. Dinlediğiniz metne göre aşağıdakilerden hangi doğrudur?", options: ["Bütün uzmanlara göre şekeri tamamen bırakmamız gerekmektedir.", "Şeker tüketimi insanların sağlığını sadece fiziksel olarak etkiler.", "Şeker diğer besin kaynakları ile birlikte enerji kaynağı haline gelir.", "Tatlı yaparken şeker yerine başka bir gıda maddesi koyamayız."], correctAnswer: "Şeker diğer besin kaynakları ile birlikte enerji kaynağı haline gelir." },
+  { id: "group_b1_listening_2", level: "B1", type: "audio_group", instruction: "Dinlediğiniz metne göre 62 ve 63. soruya cevap veriniz.", mediaUrl: "ses/tespit-sinavi/b1-dinleme2.m4a", mediaType: "audio", questions: [{ id: 62, question: "62. Kız, gece uyurken bir ses durunca uyanmış ve evde yabancı bir kişi ile karşılaşmış.", options: ["Doğru", "Yanlış"], correctAnswer: "Yanlış", type: "true_false" }, { id: 63, question: "63. Kızın yeni ev arkadaşından özür dilemesinin sebebi istemeyerek ona zarar vermesidir?", options: ["Doğru", "Yanlış"], correctAnswer: "Doğru", type: "true_false" }] },
 
 
   // ==========================================
@@ -263,7 +263,7 @@ export const placementQuestions = [
   {
     id: "group_b2_listening_1", level: "B2", type: "audio_group",
     instruction: "Dinlediğiniz metne göre 79-81. sorulara cevap veriniz.",
-    mediaUrl: "b2-dinleme1.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/b2-dinleme1.m4a", mediaType: "audio",
     questions: [
       { id: 79, question: "79. Aşağıdakilerden hangisi Nostradamus'un yaptığı işlerden değildir?", options: ["eczacılık", "falcılık", "şifacılık", "astrologluk"], correctAnswer: "falcılık" },
       { id: 81, question: "81. Nostradamus'un mezarı nerededir?", options: ["bir kilisenin bahçesinde", "bir kilisenin duvarında", "evinin bahçesinde", "evinin duvarında"], correctAnswer: "bir kilisenin duvarında" }
@@ -299,7 +299,7 @@ export const placementQuestions = [
   {
     id: "group_c1_listening_1", level: "C1", type: "audio_group",
     instruction: "Dinlediğiniz metne göre 96-100. sorulara cevap veriniz.",
-    mediaUrl: "c1-dinleme.mp3", mediaType: "audio",
+    mediaUrl: "ses/tespit-sinavi/c1-dinleme.m4a", mediaType: "audio",
     questions: [
       { id: 96, question: "96. Menengiç Güneydoğu Anadolu bölgesi şehirlerinden başka yerde yetişmez.", options: ["Doğru", "Yanlış"], correctAnswer: "Doğru", type: "true_false" },
       { id: 97, question: "97. Menengiç aslında bir kahve değil meyve türüdür.", options: ["Doğru", "Yanlış"], correctAnswer: "Doğru", type: "true_false" },

@@ -125,8 +125,12 @@ export default function ProfilePage() {
 
   const hasTelegramLinked = sessionUser.provider === 'telegram';
 
-  const getListeningSummary = (result) => {
-    if (!(result?.variant_no === 'listening_exam' || result?.sections?.exam_type === 'listening')) return null;
+  const getObjectiveExamSummary = (result) => {
+    if (!(
+      result?.variant_no === 'listening_exam' || result?.sections?.exam_type === 'listening' ||
+      result?.variant_no === 'reading_exam' || result?.sections?.exam_type === 'reading'
+    )) return null;
+
     const fromSummary = result?.sections?.scoreSummary;
     if (fromSummary?.totalQuestionCount) {
       return {
@@ -211,7 +215,7 @@ export default function ProfilePage() {
             ) : (
               <div className="space-y-4">
                 {results.map((r) => {
-                  const listeningSummary = getListeningSummary(r);
+                  const objectiveSummary = getObjectiveExamSummary(r);
                   return (
                   <React.Fragment key={r.id}>
                     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center bg-white border border-gray-200 p-4 rounded-xl shadow-sm hover:shadow-md transition">
@@ -224,14 +228,16 @@ export default function ProfilePage() {
                            ? '✍️ Yozma Imtihoni (Yazma Sınavı)'
                            : r.variant_no === 'listening_exam' || r.sections?.exam_type === 'listening'
                              ? '🎧 Dinleme Sınavı'
+                           : r.variant_no === 'reading_exam' || r.sections?.exam_type === 'reading'
+                             ? '📖 Okuma Sınavı'
                            : r.variant_no === 'placement_exam' || r.variant_no === 'placement_test' 
                              ? t('modPlacementTitle') || 'Seviye Tespit Sınavı'
                              : `${t('examTitle')} (${t('profExamVariant')} ${r.variant_no})`}
                        </h4>
                        <p className="text-sm text-gray-500 mt-1">{t('profDuration')}: {Math.floor(r.total_time / 60)}:{(r.total_time % 60).toString().padStart(2,'0')}</p>
-                       {listeningSummary && (
+                       {objectiveSummary && (
                          <div className="mt-2 inline-flex items-center gap-2 bg-indigo-50 text-indigo-800 text-xs font-bold px-2 py-1 rounded-full border border-indigo-200 shadow-sm">
-                           📊 Doğru: {listeningSummary.correct}/{listeningSummary.total} | Puan: {r.score ?? 0} | Seviye: {r.level || 'A1'}
+                           📊 Doğru: {objectiveSummary.correct}/{objectiveSummary.total} | Puan: {r.score ?? 0} | Seviye: {r.level || 'A1'}
                          </div>
                        )}
                        {r.score !== null && r.score >= 70 && r.variant_no !== 'placement_exam' && r.variant_no !== 'placement_test' && (
